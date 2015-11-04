@@ -1,0 +1,38 @@
+extends css, javascript
+
+snippet <button "button"
+<button ${2:id="$3"} type="${1:button}">$0</button>
+endsnippet
+
+snippet <label "label"
+<label for="$1">$0</label>
+endsnippet
+
+snippet <input
+<input ${1:id="${2:text}"} type="$1" />$0
+endsnippet
+
+snippet button "button" w
+button[type=${1:button}]$0
+endsnippet
+
+snippet label "label" w
+label[for=$1]$0
+endsnippet
+
+snippet label_ "label" w
+label[for=$1]{$2}+$0#$1
+endsnippet
+
+snippet input "input" w
+input[type=${1:text}]$0
+endsnippet
+
+snippet <texta
+<textarea ${1:id="$2"}>$0</textarea>
+endsnippet
+
+snippet br
+<br/>
+endsnippet
+

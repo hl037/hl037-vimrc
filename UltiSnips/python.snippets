@@ -1,0 +1,49 @@
+
+snippet m "class method" 
+def $1(self$2):
+	$3
+endsnippet
+
+snippet m_ "class magical method" 
+def __$1__(self$2):
+	$3
+endsnippet
+
+snippet s "static class method" 
+@staticmethod
+def $1(cls$2):
+	$3
+endsnippet
+
+snippet s_ "static magic method" 
+@staticmethod
+def __$1__(cls$2):
+	$3
+endsnippet
+
+snippet c "class class method" 
+@classmethod
+def $1(cls$2):
+	$3
+endsnippet
+
+snippet c_ "class magic method" 
+@classmethod
+def __$1__(cls$2):
+	$3
+endsnippet
+
+snippet f "function" 
+def $1($2):
+	$3
+endsnippet
+
+snippet si "self initialization" 
+self.$1 = $1
+endsnippet
+
+snippet s= "self initialization dif" 
+self.$1 = $2
+endsnippet
+
+

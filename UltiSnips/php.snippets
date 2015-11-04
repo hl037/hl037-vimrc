@@ -1,0 +1,101 @@
+extends html
+
+snippet route "Symfony new route" b
+/**
+ * @Route("$1", name="$2")
+ */
+public function $3Action()
+{
+	$0
+}
+endsnippet
+
+snippet render "Symfony twig render"
+return $this->render('$1.twig', array($2));
+endsnippet
+
+snippet > "Array pair" 
+'$1' => $0
+endsnippet
+
+snippet if "if" 
+if($1)
+{
+	$2
+}
+$0
+endsnippet
+
+snippet el "else" 
+else
+{
+	$2
+}
+$0
+endsnippet
+
+snippet sw "switch" 
+switch($1)
+{
+ca$2
+}
+$0
+endsnippet
+
+snippet ca "case" 
+case $1 :
+	$2
+	break;
+$0
+endsnippet
+
+snippet def "default" 
+default :
+	$1
+	break;
+$0
+endsnippet
+
+snippet for "for" 
+for($1 ; $2 ; $3)
+{
+	$4
+}
+$0
+endsnippet
+
+snippet fe "foreach" 
+foreach($1 as ${2:$$3 => $$4})
+{
+	$5
+}
+$0
+endsnippet
+
+snippet wh "while" 
+while($1)
+{
+	$2
+}
+$0
+endsnippet
+
+snippet do "do - while" 
+do
+{
+	$2
+}while($1);
+$0
+endsnippet
+
+snippet pu "public" 
+public $0
+endsnippet
+
+snippet fun "function" 
+function $1($2)
+{
+	$3
+}
+endsnippet
+

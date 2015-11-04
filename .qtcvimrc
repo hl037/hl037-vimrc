@@ -1,0 +1,8 @@
+
+source .vimrc
+
+iunmap <silent> <tab>
+sunmap <silent> <tab>
+iunmap <silent> <s-tab>
+sunmap <silent> <s-tab>
+
