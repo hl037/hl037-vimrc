@@ -1,49 +1,72 @@
 
-snippet m "class method" 
+snippet m "class method" b
 def $1(self$2):
 	$3
 endsnippet
 
-snippet m_ "class magical method" 
+snippet m_ "class magical method" b
 def __$1__(self$2):
 	$3
 endsnippet
 
-snippet s "static class method" 
+snippet st "static class method" b
 @staticmethod
 def $1(cls$2):
 	$3
 endsnippet
 
-snippet s_ "static magic method" 
+snippet st_ "static magic method" b
 @staticmethod
 def __$1__(cls$2):
 	$3
 endsnippet
 
-snippet c "class class method" 
+snippet c "class class method" b
 @classmethod
 def $1(cls$2):
 	$3
 endsnippet
 
-snippet c_ "class magic method" 
+snippet c_ "class magic method" b
 @classmethod
 def __$1__(cls$2):
 	$3
 endsnippet
 
-snippet f "function" 
+snippet f "function" b
 def $1($2):
 	$3
 endsnippet
 
-snippet si "self initialization" 
+snippet s. "self." 
+self.
+endsnippet
+
+snippet si "self initialization" b
 self.$1 = $1
 endsnippet
 
-snippet s= "self initialization dif" 
+snippet s= "self initialization dif" b
 self.$1 = $2
 endsnippet
 
+snippet i "import" b
+import $1
+endsnippet
 
+snippet fi "import from" b
+from $1 import $2
+endsnippet
+
+snippet fia "import from as" b
+from $1 import $2 as $3
+endsnippet
+
+snippet cl "class (object):" b
+class $1(object):
+	"""
+	$2
+	"""
+	def __init__(self$3):
+		$4
+endsnippet
