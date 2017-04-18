@@ -43,6 +43,76 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+" With a map leader it's possible to do extra key combinations
+" like <leader>w saves the current file
+let mapleader = ","
+let g:mapleader = ","
+
+
+set nocompatible              " be iMproved, required
+filetype off                  " required
+
+" set the runtime path to include Vundle and initialize
+
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+Plugin 'VundleVim/Vundle.vim'
+
+Plugin 'tpope/vim-abolish'
+Plugin 'kien/ctrlp.vim'
+Plugin 'vim-scripts/Emmet.vim'
+Plugin 'scrooloose/nerdtree'
+Plugin 'nvie/vim-pep8'
+Plugin 'scrooloose/syntastic'
+Plugin 'bling/vim-airline'
+Plugin 'bling/vim-bufferline'
+Plugin 'evidens/vim-twig'
+Plugin 'Harenome/vim-mipssyntax'
+Plugin 'yegappan/grep'
+Plugin 'ternjs/tern_for_vim'
+
+""""""""""""""""""""""""""""""""""""
+Plugin 'davidhalter/jedi-vim'
+
+let g:jedi#show_call_signatures = 2
+""""""""""""""""""""""""""""""""""""
+Plugin 'me', {'pinned':1 }
+"Plugin 'hl037/vim-visualHtml'
+""""""""""""""""""""""""""""""""""""
+Plugin 'SirVer/ultisnips'
+
+let g:UltiSnipsEditSplit = 'vertical'
+""""""""""""""""""""""""""""""""""""
+Plugin 'godlygeek/tabular.git'
+inoremap <c-x><c-k> <c-x><c-k>
+
+let g:UltiSnipsNoMap=1
+
+""""""""""""""""""""""""""""""""""""
+
+call vundle#end()            " required
+filetype plugin indent on    " required
+
+"Plugin 'SirVer/ultisnips'
+
+inoremap <silent> <tab> <C-R>=UltiSnips#ExpandSnippetOrJump()<cr>
+snoremap <silent> <tab> <Esc>:call UltiSnips#ExpandSnippetOrJump()<cr>"
+inoremap <silent> <s-tab> <C-R>=UltiSnips#ListSnippets()<cr>"
+snoremap <silent> <s-tab> <Esc>:call UltiSnips#ListSnippets()<cr>"
+
+""""""""""""""""""""""""""""""""""""
+"Plugin 'godlygeek/tabular.git'
+
+xnoremap <tab> :Tabularize /
+
+
+map <c-c> <esc>
+nnoremap <return> o <bs><esc>
+
+
+
 " Sets how many lines of history VIM has to remember
 set history=700
 
@@ -52,11 +122,6 @@ filetype indent on
 
 " Set to auto read when a file is changed from the outside
 set autoread
-
-" With a map leader it's possible to do extra key combinations
-" like <leader>w saves the current file
-let mapleader = ","
-let g:mapleader = ","
 
 " Fast saving
 nmap <leader>w :w!<cr>
@@ -94,7 +159,7 @@ set ignorecase
 set smartcase
 
 " Highlight search results
-" set hlsearch
+set hlsearch
 
 " Makes search act like search in modern browsers
 set incsearch
@@ -124,6 +189,64 @@ set showcmd
 
 " Set mouse on
 set mouse=a
+try
+   set ttymouse=sgr
+catch
+   set ttymouse=xterm2
+endtry
+   
+function! ToggleMouse()
+   if &mouse == 'a'
+      set mouse=
+      echo "Mouse usage disabled"
+   else
+      set mouse=a
+      echo "Mouse usage enabled"
+   endif
+endfunction
+nnoremap <leader>m :call ToggleMouse()<CR>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Colors and Fonts
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Enable syntax highlighting
+syntax enable
+
+set t_Co=256
+
+" Set extra options when running in GUI mode
+if has("gui_running")
+    set guioptions-=T
+    set guioptions+=e
+    set guitablabel=%M\ %t
+endif
+
+" Set utf8 as standard encoding and en_US as the standard language
+set encoding=utf8
+
+" Use Unix as the standard file type
+set ffs=unix,dos,mac
+
+colorscheme desert
+set background=dark
+highlight Normal ctermfg=8 ctermbg=Black
+highlight MatchParen ctermbg=238 ctermfg=190
+
+highlight DiffAdd cterm=none ctermbg=22
+highlight DiffDelete cterm=none ctermbg=52
+highlight DiffChange cterm=none ctermbg=17
+highlight DiffText cterm=none ctermbg=bg
+
+	
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Files, backups and undo
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Turn backup off, since most stuff is in SVN, git et.c anyway...
+set nobackup
+set nowb
+set noswapfile
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Text, tab and indent related
@@ -160,10 +283,8 @@ vnoremap <silent> # :call VisualSelection('b')<CR>
 " => Moving around, tabs, windows and buffers
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Treat long lines as break lines (useful when moving around in them)
-map j gj
-map k gk
-
-nmap Y y$
+noremap j gj
+noremap k gk
 
 " Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
 map <space> /
@@ -180,6 +301,7 @@ nn <C-l> <C-W>l
 
 " Close the current buffer
 map <leader>bd :Bclose<cr>
+map <leader>bc :Bclose<cr>
 
 " Close all the buffers
 map <leader>ba :1,1000 bd!<cr>
@@ -230,11 +352,11 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 " map 0 ^
 
 " Move a line of text using ALT+[jk] or Comamnd+[jk] on mac
-" nmap <M-j> mz:m+<cr>`z
-" nmap <M-k> mz:m-2<cr>`z
-" vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
-" vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
-" 
+nmap <M-j> mz:m+<cr>`z
+nmap <M-k> mz:m-2<cr>`z
+vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
+vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
+ 
 " if has("mac") || has("macunix")
 "   nmap <D-j> <M-j>
 "   nmap <D-k> <M-k>
@@ -303,24 +425,131 @@ map <leader>s? z=
 " Remove the Windows ^M - when the encodings gets messed up
 " noremap <Leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 
-map <leader>q <c-w>q
+" Quickly open a buffer for scripbble
+map <leader>q :e ~/buffer<cr>
 
 " Toggle paste mode on and off
 map <leader>pp :setlocal paste!<cr>
 
+map <leader>bb :e #<cr>
+map <leader>bw :Bclose <cr>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Clang_complete
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+let clang_auto_select = 1
+let clang_close_preview = 1
+let clang_use_library = 1
+let clang_complete_macros = 1
+let clang_complete_patterns = 1
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Custom_Maps
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+map <leader>i :let my_term = conque_term#open('bash', ['rightb vs'], 0)<CR>
+
+map <leader>e :call ConqueWriteRead(my_term, getline('.'))<CR>
+map <leader>r :call my_term.read()<CR>
+
+function ConqueWriteRead(term, str)
+   call a:term.writeln(a:str)
+   call a:term.read()
+endfunction
 
 
-"change keymap
-map <leader><F6> :!setxkbmap fr_perso oss_prog <cr>
-map <leader><F7> :!setxkbmap fr_perso oss <cr>
-map <leader>a :A <cr>
-map <leader>v <c-w>
-map \pr :Project<cr>:bwipe<cr>:Project 
+"let g:user_emmet_settings = {
+"         \  'indentation' : '   ',
+"         \  'perl' : {
+"         \    'aliases' : {
+"         \      'req' : 'require '
+"         \    },
+"         \    'snippets' : {
+"         \      'use' : "use strict\nuse warnings\n\n",
+"         \      'warn' : "warn \"|\";",
+"         D
+"         \    }
+"         \  }
+"         \}
 
-set autochdir
-"Remplacer un mot"
-map cp Pldwbyw
-map cP PldWByW
+let g:airline_powerline_fonts = 1
+
+let g:NERDTreeWinPos = "left"
+map <leader>T :NERDTree<CR>
+
+let g:user_emmet_expandabbr_key = '<c-e>e'
+let g:user_emmet_leader_key  = '<c-e>'
+let g:user_emmet_next_key = '<c-l>'
+let g:user_emmet_prev_key = '<c-h>'
+
+"let g:use_emmet_complete_tag = 1
+"imap <c-e>e <plug>(EmmetExpandAbbr)
+"nmap <c-e> <Plug>EmmetExpandWord
+"nmap <c-e> <Plug>EmmetBalanceTagInward
+"nmap <c-e> <Plug>EmmetBalanceTagOutward
+"nmap <c-e>n <Plug>(EmmetMoveNext)
+"nmap <c-e>p <Plug>(EmmetMovePrev)
+"nmap <c-e> <Plug>EmmetImageSize
+"nmap <c-e> <Plug>EmmetToggleComment
+"nmap <c-e> <Plug>EmmetSplitJoinTag
+"nmap <c-e> <Plug>EmmetRemoveTag
+"nmap <c-e> <Plug>EmmetAnchorizeURL
+"nmap <c-e> <Plug>EmmetAnchorizeSummary
+"nmap <c-e> <Plug>EmmetMergeLines
+"nmap <c-e> <Plug>EmmetCodePretty
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => SuperTab configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+nnoremap <silent> <Leader>tt :CommandT<CR>
+nnoremap <silent> <Leader>bt :CommandTBuffer<CR>
+
+map <leader>bn :bn<CR>
+map <leader>bp :bp<CR>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => TaskList onfiguration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+nmap <silent> <Leader>bt <Plug>TaskList
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => SuperTab configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"let g:SuperTabMappingForward = '<c-space>'
+"let g:SuperTabMappingBackward = '<c-s-space>'
+
+
+
+au BufRead,BufNewFile *.md set filetype=markdown
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Autocomplete
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+set completeopt=longest,menuone
+inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+
+inoremap <expr> <C-n> pumvisible() ? '<C-n>' :
+  \ '<C-n><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
+
+inoremap <expr> <M-,> pumvisible() ? '<C-n>' :
+  \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
+
+inoremap <Nul> <c-x><c-o>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => visualHtml
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+set ut=4000
+
+let g:visualHtml#live = 0
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
@@ -382,4 +611,18 @@ function! <SID>BufcloseCloseIt()
    endif
 endfunction
 
-inoremap <CR> <CR>x<BS>
+" to translate my help files in Markdown
+command! Help2Md call <SID>Help2Md()
+function <SID>Help2Md()
+   %s/^ \*.*\*\s*\n//
+   %s/^ \*.*\*\s*/    /
+   %s/^ \a/   \0/
+   %s/\s*\*.*\*\s*//g
+   %s/\.\.\.\..*//g
+   %s/=\+\_s\(\d\+\.\)\s*\(.*\)\_s-\+/# \1 \2/g
+   exec 'normal gg2dd/====' . "\<CR>" . 'kVgg:normal 4I ' . "\<CR>" . ",\<CR>"
+   '<,'>s/\~$//
+   exec "normal /#\<CR>,\<CR>"
+   .,$s/\(.*\)\_s------*/## \1/
+endfunction
+
