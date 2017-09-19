@@ -73,6 +73,8 @@ Plugin 'Harenome/vim-mipssyntax'
 Plugin 'yegappan/grep'
 Plugin 'ternjs/tern_for_vim'
 
+Plugin 'lervag/vimtex'
+
 """"""""""""""""""""""""""""""""""""
 Plugin 'davidhalter/jedi-vim'
 
@@ -95,12 +97,17 @@ let g:UltiSnipsNoMap=1
 call vundle#end()            " required
 filetype plugin indent on    " required
 
-"Plugin 'SirVer/ultisnips'
+set guicursor=a:blinkon1
 
-inoremap <silent> <tab> <C-R>=UltiSnips#ExpandSnippetOrJump()<cr>
-snoremap <silent> <tab> <Esc>:call UltiSnips#ExpandSnippetOrJump()<cr>"
-inoremap <silent> <s-tab> <C-R>=UltiSnips#ListSnippets()<cr>"
-snoremap <silent> <s-tab> <Esc>:call UltiSnips#ListSnippets()<cr>"
+"Plugin 'SirVer/ultisnips'
+let g:UltiSnipsExpandTrigger = "<tab>"
+let g:UltiSnipsListSnippets = "<s-tab>"
+let g:UltiSnipsJumpForwardTrigger = "<tab>"
+
+"inoremap <silent> <tab> <C-R>=UltiSnips#ExpandSnippetOrJump()<cr>
+"snoremap <silent> <tab> <Esc>:call UltiSnips#ExpandSnippetOrJump()<cr>"
+"inoremap <silent> <s-tab> <C-R>=UltiSnips#ListSnippets()<cr>"
+"snoremap <silent> <s-tab> <Esc>:call UltiSnips#ListSnippets()<cr>"
 
 """"""""""""""""""""""""""""""""""""
 "Plugin 'godlygeek/tabular.git'
@@ -137,6 +144,10 @@ let clang_complete_patterns = 1
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Custom_Maps
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+map <leader>y "+y
+map <leader>p "+p
+map <leader>d "+d
 
 map <leader>i :let my_term = conque_term#open('bash', ['rightb vs'], 0)<CR>
 

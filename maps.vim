@@ -78,11 +78,11 @@ set showcmd
 
 " Set mouse on
 set mouse=a
-try
-   set ttymouse=sgr
-catch
-   set ttymouse=xterm2
-endtry
+" try
+"    set ttymouse=sgr
+" catch
+"    set ttymouse=xterm2
+" endtry
    
 function! ToggleMouse()
    if &mouse == 'a'
@@ -288,8 +288,8 @@ vnoremap <silent> <leader>r :call VisualSelection('replace')<CR>
 " To go to the previous search results do:
 "   <leader>p
 "
-map <leader>cc :botright cope<cr>
-map <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
+" map <leader>cc :botright cope<cr>
+" map <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
 map <leader>n :cn<cr>
 map <leader>N :cp<cr>
 
@@ -321,3 +321,12 @@ map <leader>pp :setlocal paste!<cr>
 
 map <leader>bb :e #<cr>
 map <leader>bw :Bclose <cr>
+
+if &diff
+   nnoremap <C-j> ]c
+   nnoremap <C-k> [c
+   nnoremap <C-i> do
+   nnoremap <C-o> dp
+endif
+   
+
