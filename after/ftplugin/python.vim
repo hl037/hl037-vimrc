@@ -1,8 +1,6 @@
 set shiftwidth=2
 set tabstop=2
-set noexpandtab
-
-map <leader>pp oprint("")hi
+set expandtab
 
 vnoremap <leader>cc :normal I#<CR>
 vnoremap <leader>cd :normal 0f#x<CR>

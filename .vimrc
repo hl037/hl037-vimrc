@@ -72,6 +72,8 @@ Plugin 'evidens/vim-twig'
 Plugin 'Harenome/vim-mipssyntax'
 Plugin 'yegappan/grep'
 Plugin 'ternjs/tern_for_vim'
+Plugin 'xolox/vim-misc'
+Plugin 'xolox/vim-lua-ftplugin'
 
 """"""""""""""""""""""""""""""""""""
 Plugin 'davidhalter/jedi-vim'
@@ -94,6 +96,7 @@ let g:UltiSnipsNoMap=1
 
 call vundle#end()            " required
 filetype plugin indent on    " required
+let g:lua_complete_omni = 1
 
 "Plugin 'SirVer/ultisnips'
 

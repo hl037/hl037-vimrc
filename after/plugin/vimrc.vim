@@ -164,6 +164,10 @@ map j gj
 map k gk
 
 nmap Y y$
+nmap <leader>p "+p
+nmap <leader>y "+y
+vmap <leader>p "+p
+vmap <leader>y "+y
 
 " Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
 map <space> /

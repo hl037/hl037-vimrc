@@ -1,41 +1,41 @@
 
 snippet m "class method" b
 def $1(self$2):
-	$3
+  $3
 endsnippet
 
 snippet m_ "class magical method" b
 def __$1__(self$2):
-	$3
+  $3
 endsnippet
 
 snippet sm "static class method" b
 @staticmethod
 def $1($2):
-	$3
+  $3
 endsnippet
 
 snippet sm_ "static magic method" b
 @staticmethod
 def __$1__(cls$2):
-	$3
+  $3
 endsnippet
 
 snippet cm "class class method" b
 @classmethod
 def $1(cls$2):
-	$3
+  $3
 endsnippet
 
 snippet cm_ "class magic method" b
 @classmethod
 def __$1__(cls$2):
-	$3
+  $3
 endsnippet
 
 snippet f "function" b
 def $1($2):
-	$3
+  $3
 endsnippet
 
 snippet s. "self." 
@@ -64,9 +64,78 @@ endsnippet
 
 snippet cl "class (object):" b
 class $1(object):
-	"""
-	$2
-	"""
-	def __init__(self$3):
-		$4
+  """
+  $2
+  """
+  def __init__(self$3):
+    $4
 endsnippet
+
+snippet p "print" b
+print("$1")$3
+endsnippet
+
+snippet pp "pprint" b
+pprint($1)$3
+endsnippet
+
+snippet r "return" b
+return $1
+endsnippet
+
+snippet y "yield" b 
+yield $1
+endsnippet
+
+snippet [ "list_comp" b
+[ $3 for $1 in $2 ] $4
+endsnippet
+
+snippet ( "gen_comp" b
+( $3 for $1 in $2 ) $4
+endsnippet
+
+snippet { "dict_comp" b
+{ $3 : $4 for $1 in $2 ) $5
+endsnippet
+
+snippet {{ "set_comp" b
+{ $3 for $1 in $2 } $4
+endsnippet
+
+snippet for "for" b
+for $1 in $2 :
+  $3
+endsnippet
+
+snippet if "if" b
+if $1 :
+  $2
+endsnippet
+
+snippet elif "elif" b 
+elif $1 :
+  $2
+endsnippet
+
+snippet else "else" b
+else :
+  $2
+endsnippet
+
+snippet while "while" b
+while $1 :
+  $2
+endsnippet
+
+snippet try "try" b
+try :
+  $1
+except $2:
+  $3
+endsnippet
+
+snippet l "lambda"
+lambda $1 : $2
+endsnippet
+
