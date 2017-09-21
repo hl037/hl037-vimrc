@@ -49,6 +49,7 @@
 let mapleader = ","
 let g:mapleader = ","
 
+set encoding=utf-8
 
 set nocompatible              " be iMproved, required
 filetype off                  " required
@@ -72,6 +73,7 @@ Plugin 'evidens/vim-twig'
 Plugin 'Harenome/vim-mipssyntax'
 Plugin 'yegappan/grep'
 Plugin 'ternjs/tern_for_vim'
+Plugin 'dpelle/vim-Grammalecte'
 
 Plugin 'lervag/vimtex'
 
@@ -108,6 +110,12 @@ let g:UltiSnipsJumpForwardTrigger = "<tab>"
 "snoremap <silent> <tab> <Esc>:call UltiSnips#ExpandSnippetOrJump()<cr>"
 "inoremap <silent> <s-tab> <C-R>=UltiSnips#ListSnippets()<cr>"
 "snoremap <silent> <s-tab> <Esc>:call UltiSnips#ListSnippets()<cr>"
+
+
+""""""""""""""""""""""""""""""""""""
+"Plugin 'grammalecte'
+let g:grammalecte_cli_py = "~/.vim/g/cli.py"
+let g:grammalecte_disable_rules = "apostrophe_typographique apostrophe_typographique_après_t"
 
 """"""""""""""""""""""""""""""""""""
 "Plugin 'godlygeek/tabular.git'
