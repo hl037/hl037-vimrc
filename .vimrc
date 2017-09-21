@@ -92,8 +92,6 @@ let g:UltiSnipsEditSplit = 'vertical'
 Plugin 'godlygeek/tabular.git'
 inoremap <c-x><c-k> <c-x><c-k>
 
-let g:UltiSnipsNoMap=1
-
 """"""""""""""""""""""""""""""""""""
 
 call vundle#end()            " required
