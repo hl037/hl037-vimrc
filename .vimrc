@@ -74,6 +74,8 @@ Plugin 'Harenome/vim-mipssyntax'
 Plugin 'yegappan/grep'
 Plugin 'ternjs/tern_for_vim'
 Plugin 'dpelle/vim-Grammalecte'
+Plugin 'xolox/vim-misc'
+Plugin 'xolox/vim-lua-ftplugin'
 
 Plugin 'lervag/vimtex'
 
@@ -92,12 +94,11 @@ let g:UltiSnipsEditSplit = 'vertical'
 Plugin 'godlygeek/tabular.git'
 inoremap <c-x><c-k> <c-x><c-k>
 
-let g:UltiSnipsNoMap=1
-
 """"""""""""""""""""""""""""""""""""
 
 call vundle#end()            " required
 filetype plugin indent on    " required
+let g:lua_complete_omni = 1
 
 set guicursor=a:blinkon1
 
