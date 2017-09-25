@@ -1,3 +1,5 @@
 bundle
+*.pyc
 !bundle/Vundle.vim
 !bundle/me
+

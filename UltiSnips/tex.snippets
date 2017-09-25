@@ -20,6 +20,19 @@ snippet b "begin" b
 \end{$1}
 endsnippet
 
+snippet fig "figure" b
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=${2:0.5}${3:\textwidth}]{$1}
+	\caption{$4}
+	\label{fig:$5}
+\end{figure}$0
+endsnippet
+
+snippet rfig "ref figure" w
+\ref{fig:$1}$0
+endsnippet
+
 snippet em "emph" w
 \emph{$1}$0
 endsnippet
@@ -36,6 +49,18 @@ endsnippet
 
 snippet it "item" b
 \item{$1}$0
+endsnippet
+
+snippet lab "label" w
+\label{$1} $0
+endsnippet
+
+snippet ind "index" w
+\index{$1} $0
+endsnippet
+
+snippet lind "label + index" w
+\label{$1}\index{${2:$1}} $0
 endsnippet
 
 snippet { "brace open" i
