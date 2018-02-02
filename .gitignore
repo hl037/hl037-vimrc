@@ -2,4 +2,6 @@ bundle
 *.pyc
 !bundle/Vundle.vim
 !bundle/me
+swp
+__pycache__
 

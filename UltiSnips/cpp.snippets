@@ -1,0 +1,49 @@
+
+snippet hguard "Header Guard" b
+#ifndef `!p snip.rv = fn.upper().replace('.', '_')`
+#define `!p snip.rv = fn.upper().replace('.', '_')`
+
+$0
+
+#endif // `!p snip.rv = fn.upper().replace('.', '_')`
+endsnippet
+
+snippet i< "include <" b
+#include <$1>$0
+endsnippet
+
+snippet i" "include <" b
+#include "$1"$0
+endsnippet
+
+snippet main "main" b
+int main(int argc, char * argv[])
+{
+	$0
+	return 0;
+}
+endsnippet	
+
+snippet cl "class" b
+class $1 $0
+{
+public:
+	$1();
+	~$1();
+};
+
+endsnippet
+
+
+snippet t "template" w
+template <$1>
+$0
+endsnippet
+
+snippet tn "typename" w
+typename
+endsnippet
+
+
+
+
