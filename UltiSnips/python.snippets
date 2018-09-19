@@ -71,6 +71,11 @@ class $1(${2:object}):
     $5
 endsnippet
 
+snippet cle "class (RuntimeError)" b
+class $1(${2:RuntimeError}):
+	pass
+endsnippet
+
 snippet p "print" b
 print("$1")$3
 endsnippet
@@ -87,56 +92,65 @@ snippet y "yield" b
 yield $1
 endsnippet
 
-snippet [ "list_comp" b
-[ $3 for $1 in $2 ] $4
-endsnippet
-
-snippet ( "gen_comp" b
+snippet '(' "gen_comp" i
 ( $3 for $1 in $2 ) $4
 endsnippet
 
-snippet { "dict_comp" b
-{ $3 : $4 for $1 in $2 ) $5
+priority 0
+snippet [ "list_comp" i
+[ $3 for $1 in $2 ] $4
 endsnippet
 
-snippet {{ "set_comp" b
+priority 5
+snippet {{ "set_comp" i
 { $3 for $1 in $2 } $4
 endsnippet
 
-snippet for "for" b
+priority 0
+snippet { "dict_comp" i
+{ $3 : $4 for $1 in $2 } $5
+endsnippet
+
+
+snippet "for " "for" brA
 for $1 in $2 :
-  $3
+	$3
 endsnippet
 
-snippet if "if" b
+snippet "if " "if" brA
 if $1 :
-  $2
+	$2
 endsnippet
 
-snippet elif "elif" b 
+snippet "elif " "elif" brA
 elif $1 :
-  $2
+	$2
 endsnippet
 
-snippet else "else" b
+snippet "else " "else" brA
 else :
-  $2
+	$2
 endsnippet
 
-snippet while "while" b
+snippet "while " "while" brA
 while $1 :
-  $2
+	$2
 endsnippet
 
-snippet try "try" b
+snippet "with " "with" brA
+with $1 :
+	$2
+endsnippet
+
+snippet "try " "try" brA
 try :
-  $1
+	$1
 except $2:
-  $3
+	$3
 endsnippet
 
-snippet l "lambda"
-lambda $1 : $2
+snippet l "lambda" w
+lambda $1: $2
 endsnippet
 
 snippet clt "Test case" b
@@ -157,3 +171,81 @@ snippet mt "test method" b
 def test_$1(self$2):
 	$3
 endsnippet
+
+snippet Dbug "import dbug" b
+from dbug import *
+endsnippet
+
+snippet Dvar "Dvar" b
+Dvar(r"""$1"""$2)
+endsnippet
+
+snippet nDvar "nDvar" b
+nDvar(r"""$1"""$2)
+endsnippet
+
+snippet DNL "DNL" b
+DNL()
+endsnippet
+
+snippet DWAI "DWAI" b
+DWAI()
+endsnippet
+
+snippet nDWAI "nDWAI" b
+nDWAI()
+endsnippet
+
+snippet D "D" b
+D($1)
+endsnippet
+
+snippet nD "nD" b
+nD($1)
+endsnippet
+
+snippet * "*args" i
+*args
+endsnippet
+
+priority 1
+
+snippet ** "**kwargs" i
+**kwargs
+endsnippet
+
+
+snippet flask "Flask app" b
+
+from functools import wraps
+import flask
+from flask import Flask, abort, request
+from werkzeug.wrappers import ResponseStreamMixin
+from werkzeug.exceptions import HTTPException, NotFound
+
+${1:app} = Flask('$2')
+
+endsnippet
+
+snippet route "@app.route"
+
+@${1:app}.route('$2'$3)
+def $4($5):
+	"""
+	$6
+	"""
+	$7
+endsnippet
+
+snippet !int:! "flask int parameter" ir
+<int:$1>$0
+endsnippet
+
+snippet "string:" "flask string parameter" ir
+<string:$1>$0
+endsnippet
+
+snippet "path:" "flask path parameter" ir
+<path:$1>$0
+endsnippet
+

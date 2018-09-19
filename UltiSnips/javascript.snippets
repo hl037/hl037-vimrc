@@ -1,12 +1,42 @@
 
+snippet VuexStore "VuexStore" 
+import Vue from 'vue'
+import Vuex from 'vuex'
 
+Vue.use(Vuex)
+
+export default new Vuex.Store({
+	state: {
+	
+	},
+	mutations: {
+
+	},
+}
+endsnippet
+
+
+priority 1
 snippet (fun "Function" i
 (function($1) {
 	$0
 });
 endsnippet
 
-snippet func "Function" w
+snippet (f "Function" i
+(function($1) {
+	$0
+});
+endsnippet
+
+priority 0
+snippet fun "Function" w
+function $1($2) {
+	$0
+}
+endsnippet
+
+snippet f "Function" w
 function $1($2) {
 	$0
 }
@@ -16,6 +46,10 @@ snippet jq "JQuery start" b
 $(document).ready(function() {
 	$0
 });
+endsnippet
+
+snippet con "console.log()" b
+console.log($1);
 endsnippet
 
 snippet a "Alert" b
@@ -40,32 +74,57 @@ arguments[$1]
 endsnippet
 
 
-snippet if "if"
+snippet "if " "if" brA
 if($1) {
 	$2
 }
 $0
 endsnippet
 
-snippet wh "while"
+snippet "elif " "else if" brA
+else if($1) {
+	$2
+}
+$0
+endsnippet
+
+snippet "while " "while" brA
 if($1) {
 	$2
 }
 $0
 endsnippet
 
-snippet el "else" 
+snippet "else " "else" brA
 else {
 	$1
 }
 $0
 endsnippet
 
-snippet for "for" 
+snippet "for " "for" brA
 for($1 ; ${2:$1 < $3} ; ${4:++$1}) {
 	$5
 }
 $0
+endsnippet
+
+snippet !\[! "[]" r
+[
+	$1
+]
+endsnippet
+
+snippet !\(! "()" r
+(
+	$1
+)
+endsnippet
+
+snippet !{! "{}" r
+{
+	$1
+}
 endsnippet
 
 

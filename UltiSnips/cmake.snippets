@@ -1,0 +1,49 @@
+snippet subdirs "Base subdir project" 
+cmake_minimum_required(VERSION 3.6)
+project($1)
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+add_subdirectory($2)
+
+#The following is for idiot IDE that can't read all targets
+file(GLOB SRC LIST_DIRECTORIES false *)
+add_custom_target(root SOURCES ${SRC})
+endsnippet
+
+snippet cxx_flags "Add CXX Flags" 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} $1")
+endsnippet
+
+
+snippet glob "Glob files" 
+file(GLOB${1:_RECURSE} ${2:VAR} ${3:"*.cpp"})
+endsnippet
+
+snippet if  "if" 
+if($1)
+	$0
+endif($1)
+endsnippet
+
+snippet add_exe "add_executable" 
+add_executable($1 ${2:\$\{SRC\}})
+endsnippet
+
+snippet add_lib "add_library" 
+add_library($1 ${2:\$\{SRC\}})
+endsnippet
+
+snippet inc "target_inclide_directories" 
+target_include_directories($1 ${2:PUBLIC} $3)
+endsnippet
+
+snippet link "target_link_libraries" 
+target_link_libraries($1 $2)
+endsnippet
+
+snippet find "find_package" 
+find_package($1 ${2:REQUIRED})
+endsnippet
+

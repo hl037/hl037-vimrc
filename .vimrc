@@ -62,7 +62,7 @@ if dein#load_state('~/.vim/dein/')
 
    " You can specify revision/branch/tag.
    call dein#add('Shougo/vimshell', {'merged':0})
-
+   call dein#add('Shougo/vimproc.vim', {'build' : 'make', 'merged':0})
    call dein#add('tpope/vim-abolish', {'merged':0})
    call dein#add('kien/ctrlp.vim', {'merged':0})
    call dein#add('vim-scripts/Emmet.vim', {'merged':0})
@@ -71,28 +71,34 @@ if dein#load_state('~/.vim/dein/')
    call dein#add('/usr/share/vim/vimfiles', {'merged':0})
    call dein#add('junegunn/fzf.vim', {'merged':0})
    call dein#add('vim-scripts/L9', {'merged':0})
-   call dein#add('nvie/vim-pep8', {'merged':0})
+   "call dein#add('nvie/vim-pep8', {'merged':0})
    call dein#add('scrooloose/syntastic', {'merged':0})
    call dein#add('bling/vim-airline', {'merged':0})
    call dein#add('bling/vim-bufferline', {'merged':0})
-   call dein#add('evidens/vim-twig', {'merged':0})
+   "call dein#add('evidens/vim-twig', {'merged':0})
    call dein#add('Harenome/vim-mipssyntax', {'merged':0})
    call dein#add('yegappan/grep', {'merged':0})
-   call dein#add('ternjs/tern_for_vim', {'merged':0})
+   "call dein#add('ternjs/tern_for_vim', {'merged':0, 'on_ft':'javascript'})
+   call dein#add('Valloric/YouCompleteMe', {'merged':0, 'on_ft':['javascript', 'vue']})
+   call dein#add('posva/vim-vue', {'merged':0})
    call dein#add('dpelle/vim-Grammalecte', {'merged':0})
    call dein#add('xolox/vim-misc', {'merged':0})
-   call dein#add('xolox/vim-lua-ftplugin', {'merged':0})
+   call dein#add('xolox/vim-lua-ftplugin', {'merged':0, 'on_ft': 'lua'})
 
-   call dein#add('lervag/vimtex', {'merged':0})
+   call dein#add('lervag/vimtex', {'merged':0, 'on_ft':['latex', 'tex']})
+   call dein#add('wesQ3/vim-windowswap', {'merged':0})
+   call dein#add('kana/vim-textobj-user', {'merged':0})
+   call dein#add('bps/vim-textobj-python', {'merged':0, 'on_ft':'javascript'})
+   call dein#add('dbakker/vim-paragraph-motion', {'merged':0})
 
    """""""""""""""""""""""""""""""""""""
-   call dein#add('davidhalter/jedi-vim', {'merged':0})
+   call dein#add('davidhalter/jedi-vim', {'merged':0, 'on_ft':'python'})
    "call dein#add('python-mode/python-mode', {'merged':0})
    "
 
    """""""""""""""""""""""""""""""""""""
    "Plugin 'me', {'pinned':1 }
-   "Plugin 'hl037/vim-visualHtml'
+   call dein#add( 'hl037/vim-visualHtml', {'merged': 0})
    """""""""""""""""""""""""""""""""""""
    call dein#add('SirVer/ultisnips', {'merged':0})
 
@@ -112,12 +118,59 @@ source ~/.vim/supercontrol.vim
 filetype plugin indent on
 syntax enable
 
+if !has('nvim')
+   set ttymouse=sgr
+   set clipboard+=unnamedplus
+   map <esc>OA <up>
+   map <esc>OA <Up>
+   map <esc>OB <down>
+   map <esc>OB <Down>
+   map <esc>OC <right>
+   map <esc>OC <Right>
+   map <esc>OD <left>
+   map <esc>OD <Left>
+   map <esc>[1;5A <c-up>
+   map <esc>[1;5A <c-Up>
+   map <esc>[1;5B <c-down>
+   map <esc>[1;5B <c-Down>
+   map <esc>[1;5C <c-right>
+   map <esc>[1;5C <c-Right>
+   map <esc>[1;5D <c-left>
+   map <esc>[1;5D <c-Left>
+endif
 
+let g:jedi#force_py_version = 3
+let g:jedi#use_splits_not_buffers = "right"
 let g:jedi#show_call_signatures = 2
+let g:jedi#goto_command = "<leader>f"
+let g:jedi#goto_assignments_command = "<leader>a"
+let g:jedi#goto_definitions_command = "<leader>g"
+let g:jedi#documentation_command = "K"
+let g:jedi#usages_command = "<leader>n"
+let g:jedi#completions_command = "<C-Space>"
+let g:jedi#rename_command = "<leader>r"
+
+
+
 let g:UltiSnipsEditSplit = 'vertical'
+let g:UltiSnipsSnippetsDir = '~/.vim/UltiSnips'
 inoremap <c-x><c-k> <c-x><c-k>
 
 let g:NERDTreeMouseMode = 3
+
+" Start autocompletion after 4 chars
+let g:ycm_min_num_of_chars_for_completion = 3
+let g:ycm_min_num_identifier_candidate_chars = 3
+let g:ycm_enable_diagnostic_highlighting = 0
+
+let g:ycm_key_invoke_completion = '<C-Space>'
+let g:ycm_key_list_select_completion = ['<Down>', '<C-Space>']
+let g:ycm_key_list_stop_completion = ['<Return>']
+let g:ycm_filetype_whitelist = { 'javascript': 1, 'vue' : 1}
+let g:ycm_filetype_blacklist = { 'python': 1, 'php' : 1 }
+" Don't show YCM's preview window
+"set completeopt-=preview
+"let g:ycm_add_preview_to_completeopt = 0
 
 let g:ctrlp_map = ''
 let g:ctrlp_working_path_mode = 'ra'
@@ -186,12 +239,12 @@ let g:pymode_rope_rename_bind = '<leader>rr'
 let g:pymode_rope_rename_module_bind = '<leader>rm'
 let g:pymode_rope_organize_imports_bind = '<leader>ro'
 let g:pymode_rope_autoimport_bind = '<leader>ri'
-let g:pymode_rope_extract_method_bind = '<C-c>rem'
-let g:pymode_rope_extract_variable_bind = '<C-c>rev'
+let g:pymode_rope_extract_method_bind = ''
+let g:pymode_rope_extract_variable_bind = ''
 let g:pymode_rope_use_function_bind = ''
 
 let g:pymode_rope_move_bind = ',rv'
-let g:pymode_rope_change_signature_bind = '<C-c>rs'
+let g:pymode_rope_change_signature_bind = ''
 
 
 let g:pymode_syntax = 1
@@ -231,8 +284,8 @@ let g:UltiSnipsJumpForwardTrigger = "<tab>"
 
 """"""""""""""""""""""""""""""""""""
 "Plugin 'grammalecte'
-let g:grammalecte_cli_py = "~/.vim/g/cli.py"
-let g:grammalecte_disable_rules = "apostrophe_typographique apostrophe_typographique_après_t"
+let g:grammalecte_cli_py = "~/.vim/g/grammalecte-cli.py"
+let g:grammalecte_disable_rules = "apostrophe_typographique apostrophe_typographique_après_t espaces_début_ligne espaces_milieu_ligne typo_points_suspension1 nbsp_après_chevrons_ouvrants nbsp_avant_chevrons_fermants1 typo_tiret_incise typo_guillemets_typographiques_doubles_ouvrants typo_guillemets_typographiques_doubles_fermants typo_tiret_début_ligne esp_milieu_ligne typo_parenthese_ouvrante_collée typo_espace_manquant_après1 typo_ponctuation_superflue3 typo_espace_avant_signe_fermant typo_espace_après_signe_ouvrant esp_début_ligne typo_guillemets_typographiques_simples_ouvrants typo_guillemets_typographiques_simples_fermants typo_points_suspension3 nbsp_avant_deux_points unit_nbsp_avant_unités1"
 
 """"""""""""""""""""""""""""""""""""
 "Plugin 'godlygeek/tabular.git'
@@ -240,7 +293,8 @@ let g:grammalecte_disable_rules = "apostrophe_typographique apostrophe_typograph
 xnoremap <tab> :Tabularize /
 
 
-map <c-c> <esc>
+map <c-c> <esc><esc>
+imap <c-c> <esc><esc>
 nnoremap <return> o <bs><esc>
 
 
@@ -254,6 +308,16 @@ filetype indent on
 
 " Set to auto read when a file is changed from the outside
 set autoread
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Plugin Windowswap
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+let g:windowswap_map_keys = 0 "prevent default bindings
+nnoremap <silent> <c-w>y :call WindowSwap#MarkWindowSwap()<CR>
+nnoremap <silent> <c-w>p :call WindowSwap#DoWindowSwap()<CR>
+nnoremap <silent> <c-w>r :call WindowSwap#EasyWindowSwap()<CR><Paste>
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Clang_complete
@@ -374,11 +438,20 @@ inoremap <Nul> <c-x><c-o>
 
 set ut=4000
 
+let g:visualHtml#active = 0
 let g:visualHtml#live = 0
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+command! DiffOri call DiffOri()
+
+function! DiffOri()
+  :w! /tmp/working_copy
+  exec "!diff /tmp/working_copy %"
+endfunction
+
 function! CmdLine(str)
     exe "menu Foo.Bar :" . a:str
     emenu Foo.Bar

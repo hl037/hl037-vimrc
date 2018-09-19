@@ -338,4 +338,6 @@ if &diff
    nnoremap <C-o> dp
 endif
    
+" The expected behaviour
+nmap Y y$
 

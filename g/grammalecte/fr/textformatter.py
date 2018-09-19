@@ -1,7 +1,6 @@
 #!python3
 
 import re
-from ..echo import echo
 
 
 dReplTable = {
@@ -70,11 +69,11 @@ dReplTable = {
                                 (" [-–],", " —,") ],
     "ts_n_dash_start":        [ ("^[-—][  ]", "– "),
                                 ("^– ", "– "),
-                                ("^[-–—](?=\\w)", "– ") ],
+                                ("^[-–—](?=[\\w.…])", "– ") ],
     "ts_m_dash_start":        [ ("^[-–][  ]", "— "),
                                 ("^— ", "— "),
                                 ("^«[  ][—–-][  ]", "« — "),
-                                ("^[-–—](?=\\w)", "— ") ],
+                                ("^[-–—](?=[\\w.…])", "— ") ],
     "ts_quotation_marks":     [ (u'"(\\w+)"', "“$1”"),
                                 ("''(\\w+)''", "“$1”"),
                                 ("'(\\w+)'", "“$1”"),
@@ -249,7 +248,5 @@ class TextFormatter:
         for sOptName, bVal in lOptRepl:
             if bVal:
                 for zRgx, sRep in dReplTable[sOptName]:
-                    #echo("{}  -->  {}".format(zRgx.pattern, sRep))
                     sText = zRgx.sub(sRep, sText)
-                    #echo(sText)
         return sText

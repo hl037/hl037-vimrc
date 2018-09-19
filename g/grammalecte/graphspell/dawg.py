@@ -12,6 +12,8 @@
 import sys
 import os
 import collections
+import json
+import time
 
 from . import str_transform as st
 from .progressbar import ProgressBar
@@ -25,56 +27,9 @@ def readFile (spf):
             for sLine in hSrc:
                 sLine = sLine.strip()
                 if sLine and not sLine.startswith("#"):
-                    yield sLine
+                    yield sLine.split("\t")
     else:
         raise OSError("# Error. File not found or not loadable: " + spf)
-
-
-def getElemsFromFile (spf):
-    "returns tuple of (flexion, stem, tags) from lexicon file"
-    nErr = 0
-    if not spf.endswith(".clex"):
-        for sLine in readFile(spf):
-            try:
-                sFlex, sStem, sTag = sLine.split("\t")
-                yield (sFlex, sStem, sTag)
-            except:
-                nErr += 1
-    else:
-        sTag = "_" # neutral tag
-        sTag2 = ""
-        for sLine in readFile(spf):
-            if sLine.startswith("[") and sLine.endswith("]"):
-                # tag line
-                if "-->" in sLine:
-                    try:
-                        sTag, sSfxCode, sTag2 = sLine[1:-1].split(" --> ")
-                    except:
-                        nErr += 1
-                        continue
-                    sTag = sTag.strip()
-                    sSfxCode = sSfxCode.strip()
-                    sTag2 = sTag2.strip()
-                else:
-                    sTag = sLine[1:-1]
-                    sTag2 = ""
-            else:
-                # entry line
-                if "\t" in sLine:
-                    if sLine.count("\t") > 1:
-                        nErr += 1
-                        continue
-                    sFlex, sStem = sLine.split("\t")
-                else:
-                    sFlex = sStem = sLine
-                #print(sFlex, sStem, sTag)
-                yield (sFlex, sStem, sTag)
-                if sTag2:
-                    sFlex2 = st.changeWordWithSuffixCode(sFlex, sSfxCode)
-                    #print(sFlex2, sStem, sTag2)
-                    yield (sFlex2, sStem, sTag2)
-    if nErr:
-        print(" # Lines ignored: {:>10}".format(nErr))
 
 
 
@@ -86,7 +41,7 @@ class DAWG:
     # Each arc is an index in self.lArcVal, where are stored characters, suffix/affix codes for stemming and tags.
     # Important: As usual, the last node (after ‘iTags’) is tagged final, AND the node after ‘cN’ is ALSO tagged final.
 
-    def __init__ (self, spfSrc, sLangName, cStemming):
+    def __init__ (self, src, cStemming, sLangCode, sLangName="", sDicName=""):
         print("===== Direct Acyclic Word Graph - Minimal Acyclic Finite State Automaton =====")
         cStemming = cStemming.upper()
         if cStemming == "A":
@@ -98,14 +53,18 @@ class DAWG:
         else:
             raise ValueError("# Error. Unknown stemming code: {}".format(cStemming))
 
-        lEntry = []
+        aEntry = set()
         lChar = ['']; dChar = {}; nChar = 1; dCharOccur = {}
         lAff  = [];   dAff  = {}; nAff  = 0; dAffOccur = {}
         lTag  = [];   dTag  = {}; nTag  = 0; dTagOccur = {}
         nErr = 0
-        
+
         # read lexicon
-        for sFlex, sStem, sTag in getElemsFromFile(spfSrc):
+        if type(src) is str:
+            iterable = readFile(src)
+        else:
+            iterable = src
+        for sFlex, sStem, sTag in iterable:
             addWordToCharDict(sFlex)
             # chars
             for c in sFlex:
@@ -115,39 +74,37 @@ class DAWG:
                     nChar += 1
                 dCharOccur[c] = dCharOccur.get(c, 0) + 1
             # affixes to find stem from flexion
-            aff = funcStemmingGen(sFlex, sStem)
-            if aff not in dAff:
-                dAff[aff] = nAff
-                lAff.append(aff)
+            sAff = funcStemmingGen(sFlex, sStem)
+            if sAff not in dAff:
+                dAff[sAff] = nAff
+                lAff.append(sAff)
                 nAff += 1
-            dAffOccur[aff] = dCharOccur.get(aff, 0) + 1
+            dAffOccur[sAff] = dCharOccur.get(sAff, 0) + 1
             # tags
             if sTag not in dTag:
                 dTag[sTag] = nTag
                 lTag.append(sTag)
                 nTag += 1
             dTagOccur[sTag] = dTagOccur.get(sTag, 0) + 1
-            lEntry.append((sFlex, dAff[aff], dTag[sTag]))
-        if not lEntry:
+            aEntry.add((sFlex, dAff[sAff], dTag[sTag]))
+        if not aEntry:
             raise ValueError("# Error. Empty lexicon")
         
         # Preparing DAWG
         print(" > Preparing list of words")
         lVal = lChar + lAff + lTag
-        lWord = [ [dChar[c] for c in sFlex] + [iAff+nChar] + [iTag+nChar+nAff]  for sFlex, iAff, iTag in lEntry ]
-        lEntry = None
+        lWord = [ [dChar[c] for c in sFlex] + [iAff+nChar] + [iTag+nChar+nAff]  for sFlex, iAff, iTag in aEntry ]
+        aEntry = None
         
         # Dictionary of arc values occurrency, to sort arcs of each node
         dValOccur = dict( [ (dChar[c], dCharOccur[c])  for c in dChar ] \
                         + [ (dAff[aff]+nChar, dAffOccur[aff]) for aff in dAff ] \
                         + [ (dTag[tag]+nChar+nAff, dTagOccur[tag]) for tag in dTag ] )
-        #with open(spfSrc[:-8]+".valuesfreq.txt", 'w', encoding='utf-8') as hFreqDst:  # DEBUG
-        #    for iKey, nOcc in sorted(dValOccur.items(), key=lambda t: t[1], reverse=True):
-        #        hFreqDst.write("{}: {}\n".format(lVal[iKey], nOcc))
-        #    hFreqDst.close()
         
-        self.sFile = spfSrc
-        self.sLang = sLangName
+        self.sFileName = src  if type(src) is str  else "[None]"
+        self.sLangCode = sLangCode
+        self.sLangName = sLangName
+        self.sDicName = sDicName
         self.nEntry = len(lWord)
         self.aPreviousEntry = []
         DawgNode.resetNextId()
@@ -181,7 +138,7 @@ class DAWG:
         self.finish()
         self.countNodes()
         self.countArcs()
-        self.sortNodes()
+        self.sortNodes()         # version 2 and 3 
         self.sortNodeArcs(dValOccur)
         #self.sortNodeArcs2 (self.oRoot, "")
         self.displayInfo()
@@ -327,18 +284,44 @@ class DAWG:
                 hDst.write(" {:>6}. {}\n".format(i, s))
             hDst.close()
 
+    def select (self, sPattern=""):
+        "generator: returns all entries which morphology fits <sPattern>"
+        zPattern = None
+        if sPattern:
+            try:
+                zPattern = re.compile(sPattern)
+            except:
+                print("# Error in regex pattern")
+                traceback.print_exc()
+        yield from self._select(zPattern, self.oRoot, "")
+
+    def _select (self, zPattern, oNode, sWord):
+        # recursive generator
+        for nVal, oNextNode in oNode.arcs.items():
+            if nVal <= self.nChar:
+                # simple character
+                yield from self._select(zPattern, oNextNode, sWord + self.lArcVal[nVal])
+            else:
+                sEntry = sWord + "\t" + self.funcStemming(sWord, self.lArcVal[nVal])
+                for nMorphVal, _ in oNextNode.arcs.items():
+                    if not zPattern or zPattern.search(self.lArcVal[nMorphVal]):
+                        yield sEntry + "\t" + self.lArcVal[nMorphVal]
+
+
     # BINARY CONVERSION
-    def createBinary (self, sPathFile, nMethod, bDebug=False):
-        print(" > Write DAWG as an indexable binary dictionary [method: %d]" % nMethod)
-        if nMethod == 1:
+    def _calculateBinary (self, nCompressionMethod):
+        print(" > Write DAWG as an indexable binary dictionary [method: %d]" % nCompressionMethod)
+        if nCompressionMethod == 1:
             self.nBytesArc = ( (self.nArcVal.bit_length() + 2) // 8 ) + 1   # We add 2 bits. See DawgNode.convToBytes1()
+            self.nBytesOffset = 0
             self._calcNumBytesNodeAddress()
             self._calcNodesAddress1()
-        elif nMethod == 2:
+        elif nCompressionMethod == 2:
             self.nBytesArc = ( (self.nArcVal.bit_length() + 3) // 8 ) + 1   # We add 3 bits. See DawgNode.convToBytes2()
+            self.nBytesOffset = 0
             self._calcNumBytesNodeAddress()
             self._calcNodesAddress2()
-        elif nMethod == 3:
+        elif nCompressionMethod == 3:
             self.nBytesArc = ( (self.nArcVal.bit_length() + 3) // 8 ) + 1   # We add 3 bits. See DawgNode.convToBytes3()
             self.nBytesOffset = 1
             self.nMaxOffset = (2 ** (self.nBytesOffset * 8)) - 1
@@ -350,9 +333,6 @@ class DAWG:
         print("   Arc size: {} bytes, Address size: {} bytes   ->   {} * {} = {} bytes".format( self.nBytesArc, self.nBytesNodeAddress, \
                                                                                                 self.nBytesArc+self.nBytesNodeAddress, self.nArc, \
                                                                                                 (self.nBytesArc+self.nBytesNodeAddress)*self.nArc ))
-        self._writeBinary(sPathFile, nMethod)
-        if bDebug:
-            self._writeNodes(sPathFile, nMethod)
 
     def _calcNumBytesNodeAddress (self):
         "how many bytes needed to store all nodes/arcs in the binary dictionary"
@@ -404,17 +384,72 @@ class DAWG:
                     self.lSortedNodes[i].size = nSize
                     bEnd = False
 
-    def _writeBinary (self, sPathFile, nMethod):
+    def getBinaryAsJSON (self, nCompressionMethod=1, bBinaryDictAsHexString=True):
+        self._calculateBinary(nCompressionMethod)
+        byDic = b""
+        if nCompressionMethod == 1:
+            byDic = self.oRoot.convToBytes1(self.nBytesArc, self.nBytesNodeAddress)
+            for oNode in self.lMinimizedNodes:
+                byDic += oNode.convToBytes1(self.nBytesArc, self.nBytesNodeAddress)
+        elif nCompressionMethod == 2:
+            byDic = self.oRoot.convToBytes2(self.nBytesArc, self.nBytesNodeAddress)
+            for oNode in self.lSortedNodes:
+                byDic += oNode.convToBytes2(self.nBytesArc, self.nBytesNodeAddress)
+        elif nCompressionMethod == 3:
+            byDic = self.oRoot.convToBytes3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset)
+            for oNode in self.lSortedNodes:
+                byDic += oNode.convToBytes3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset)
+        return {
+            "sHeader": "/grammalecte-fsa/",
+            "sLangCode": self.sLangCode,
+            "sLangName": self.sLangName,
+            "sDicName": self.sDicName,
+            "sFileName": self.sFileName,
+            "sDate": self._getDate(),
+            "nEntry": self.nEntry,
+            "nChar": self.nChar,
+            "nAff": self.nAff,
+            "nTag": self.nTag,
+            "cStemming": self.cStemming,
+            "dChar": self.dChar,
+            "nNode": self.nNode,
+            "nArc": self.nArc,
+            "nArcVal": self.nArcVal,
+            "lArcVal": self.lArcVal,
+            "nCompressionMethod": nCompressionMethod,
+            "nBytesArc": self.nBytesArc,
+            "nBytesNodeAddress": self.nBytesNodeAddress,
+            "nBytesOffset": self.nBytesOffset,
+            # Mozilla’s JS parser don’t like file bigger than 4 Mb!
+            # So, if necessary, we use an hexadecimal string, that we will convert later in Firefox’s extension.
+            # https://github.com/mozilla/addons-linter/issues/1361
+            "sByDic": byDic.hex()  if bBinaryDictAsHexString  else [ e  for e in byDic ]
+        }
+
+    def writeAsJSObject (self, spfDst, nCompressionMethod, bInJSModule=False, bBinaryDictAsHexString=True):
+        if not spfDst.endswith(".json"):
+            spfDst += "."+str(nCompressionMethod)+".json"
+        with open(spfDst, "w", encoding="utf-8", newline="\n") as hDst:
+            if bInJSModule:
+                hDst.write('// JavaScript\n// Generated data (do not edit)\n\n"use strict";\n\nconst dictionary = ')
+            hDst.write( json.dumps(self.getBinaryAsJSON(nCompressionMethod, bBinaryDictAsHexString), ensure_ascii=False) )
+            if bInJSModule:
+                hDst.write(";\n\nexports.dictionary = dictionary;\n")
+
+    def writeBinary (self, sPathFile, nCompressionMethod, bDebug=False):
         """
         Format of the binary indexable dictionary:
         Each section is separated with 4 bytes of \0
         
         - Section Header:
-            /pyfsa/[version]
-                * version is an ASCII string
+            /grammalecte-fsa/[compression method]
+                * compression method is an ASCII string
         
         - Section Informations:
-            /[tag_lang]
+            /[lang code]
+            /[lang name]
+            /[dictionary name]
+            /[date creation]
             /[number of chars]
             /[number of bytes for each arc]
             /[number of bytes for each address node]
@@ -424,7 +459,8 @@ class DAWG:
             /[number of affixes]
                 * each field is a ASCII string
             /[stemming code]
-                * "S" means stems are generated by /suffix_code/, "A" means they are generated by /affix_code/
+                * "S" means stems are generated by /suffix_code/,
+                  "A" means they are generated by /affix_code/
                   See defineSuffixCode() and defineAffixCode() for details.
                   "N" means no stemming
         
@@ -435,65 +471,59 @@ class DAWG:
                 * A list of nodes which are a list of arcs with an address of the next node.
                   See DawgNode.convToBytes() for details.
         """
+        self._calculateBinary(nCompressionMethod)
         if not sPathFile.endswith(".bdic"):
-            sPathFile += "."+str(nMethod)+".bdic"
+            sPathFile += "."+str(nCompressionMethod)+".bdic"
         with open(sPathFile, 'wb') as hDst:
             # header
-            hDst.write("/pyfsa/{}/".format(nMethod).encode("utf-8"))
+            hDst.write("/grammalecte-fsa/{}/".format(nCompressionMethod).encode("utf-8"))
             hDst.write(b"\0\0\0\0")
             # infos
-            hDst.write("{}/{}/{}/{}/{}/{}/{}/{}/{}".format(self.sLang, self.nChar, self.nBytesArc, self.nBytesNodeAddress, \
-                                                           self.nEntry, self.nNode, self.nArc, self.nAff, self.cStemming).encode("utf-8"))
+            sInfo = "{}//{}//{}//{}//{}//{}//{}//{}//{}//{}//{}//{}//".format(self.sLangCode, self.sLangName, self.sDicName, self._getDate(), \
+                                                                              self.nChar, self.nBytesArc, self.nBytesNodeAddress, \
+                                                                              self.nEntry, self.nNode, self.nArc, self.nAff, self.cStemming)
+            hDst.write(sInfo.encode("utf-8"))
             hDst.write(b"\0\0\0\0")
             # lArcVal
             hDst.write("\t".join(self.lArcVal).encode("utf-8"))
             hDst.write(b"\0\0\0\0")
             # DAWG: nodes / arcs
-            if nMethod == 1:
+            if nCompressionMethod == 1:
                 hDst.write(self.oRoot.convToBytes1(self.nBytesArc, self.nBytesNodeAddress))
                 for oNode in self.lMinimizedNodes:
                     hDst.write(oNode.convToBytes1(self.nBytesArc, self.nBytesNodeAddress))
-            elif nMethod == 2:
+            elif nCompressionMethod == 2:
                 hDst.write(self.oRoot.convToBytes2(self.nBytesArc, self.nBytesNodeAddress))
                 for oNode in self.lSortedNodes:
                     hDst.write(oNode.convToBytes2(self.nBytesArc, self.nBytesNodeAddress))
-            elif nMethod == 3:
+            elif nCompressionMethod == 3:
                 hDst.write(self.oRoot.convToBytes3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset))
                 for oNode in self.lSortedNodes:
                     hDst.write(oNode.convToBytes3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset))
-            hDst.close()
+        if bDebug:
+            self._writeNodes(sPathFile, nCompressionMethod)
 
-    def _writeNodes (self, sPathFile, nMethod):
+    def _getDate (self):
+        return time.strftime("%Y.%m.%d, %H:%M")
+
+    def _writeNodes (self, sPathFile, nCompressionMethod):
         "for debugging only"
         print(" > Write nodes")
-        with open(sPathFile+".nodes."+str(nMethod)+".txt", 'w', encoding='utf-8', newline="\n") as hDst:
-            if nMethod == 1:
+        with open(sPathFile+".nodes."+str(nCompressionMethod)+".txt", 'w', encoding='utf-8', newline="\n") as hDst:
+            if nCompressionMethod == 1:
                 hDst.write(self.oRoot.getTxtRepr1(self.nBytesArc, self.nBytesNodeAddress, self.lArcVal)+"\n")
                 #hDst.write( ''.join( [ "%02X " %  z  for z in self.oRoot.convToBytes1(self.nBytesArc, self.nBytesNodeAddress) ] ).strip() )
                 for oNode in self.lMinimizedNodes:
                     hDst.write(oNode.getTxtRepr1(self.nBytesArc, self.nBytesNodeAddress, self.lArcVal)+"\n")
-            if nMethod == 2:
+            if nCompressionMethod == 2:
                 hDst.write(self.oRoot.getTxtRepr2(self.nBytesArc, self.nBytesNodeAddress, self.lArcVal)+"\n")
                 for oNode in self.lSortedNodes:
                     hDst.write(oNode.getTxtRepr2(self.nBytesArc, self.nBytesNodeAddress, self.lArcVal)+"\n")
-            if nMethod == 3:
+            if nCompressionMethod == 3:
                 hDst.write(self.oRoot.getTxtRepr3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset, self.lArcVal)+"\n")
                 #hDst.write( ''.join( [ "%02X " %  z  for z in self.oRoot.convToBytes3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset) ] ).strip() )
                 for oNode in self.lSortedNodes:
                     hDst.write(oNode.getTxtRepr3(self.nBytesArc, self.nBytesNodeAddress, self.nBytesOffset, self.lArcVal)+"\n")
-            hDst.close()
-    
-    def writeResults (self, sPathFile):
-        bFileExits = os.path.isfile("_lexicons.res.txt")
-        with open("_lexicons.res.txt", "a", encoding='utf-8', newline="\n") as hDst:
-            sFormat1 = "{:<12} {:>12} {:>5} {:>8} {:>8} {:>6} {:>8} {:>9} {:>9} {:>15} {:>12} {:>12}\n"
-            sFormat2 = "{:<12} {:>12,} {:>5,} {:>8,} {:>8} {:>6,} {:>8,} {:>9,} {:>9,} {:>15,} {:>12,} {:>12,}\n"
-            if not bFileExits:
-                hDst.write(sFormat1.format("Lexicon", "Entries", "Chars", "Affixes", "Stemming", "Tags", "Values", "Nodes", "Arcs", "Lexicon (Kb)", "Dict (Kb)", "LT Dict (Kb)"))
-            hDst.write(sFormat2.format(self.sLang, self.nEntry, self.nChar, self.nAff, self.cStemming + "FX", self.nTag, self.nArcVal, \
-                                       self.nNode, self.nArc, os.path.getsize(self.sFile), os.path.getsize(sPathFile), \
-                                       os.path.getsize("cfsa/dict/{}.dict".format(self.sLang)) if os.path.isfile("cfsa/dict/{}.dict".format(self.sLang)) else 0))
-            hDst.close()
 
 
 
@@ -520,11 +550,8 @@ class DawgNode:
 
     def __str__ (self):
         # Caution! this function is used for hashing and comparison!
-        l = []
-        if self.final: 
-            l.append("1")
-        else:
-            l.append("0")
+        sFinalChar = "1"  if self.final  else "0";
+        l = [sFinalChar]
         for (key, node) in self.arcs.items():
             l.append(str(key))
             l.append(str(node.i))

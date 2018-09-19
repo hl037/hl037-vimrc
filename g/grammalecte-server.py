@@ -1,4 +1,4 @@
-#!python3
+ #!/usr/bin/env python3
 
 import sys
 import os.path
@@ -10,12 +10,9 @@ import time
 
 from bottle import Bottle, run, request, response, template, static_file
 
-import grammalecte.fr as gce
-import grammalecte.fr.lexicographe as lxg
-import grammalecte.fr.textformatter as tf
+import grammalecte
 import grammalecte.text as txt
-import grammalecte.tokenizer as tkz
-from grammalecte.echo import echo
+from grammalecte.graphspell.echo import echo
 
 
 HOMEPAGE = """
@@ -98,10 +95,10 @@ I'm doomed, but you are not. You can get out of here.
 def getServerOptions ():
     xConfig = configparser.SafeConfigParser()
     try:
-        xConfig.read("server_options._global.ini")
+        xConfig.read("grammalecte-server-options._global.ini")
         dOpt = xConfig._sections['options']
     except:
-        echo("Options file [server_options._global.ini] not found or not readable")
+        echo("Options file [grammalecte-server-options._global.ini] not found or not readable")
         exit()
     return dOpt
 
@@ -109,14 +106,14 @@ def getServerOptions ():
 def getConfigOptions (sLang):
     xConfig = configparser.SafeConfigParser()
     try:
-        xConfig.read("server_options." + sLang + ".ini")
+        xConfig.read("grammalecte-server-options." + sLang + ".ini")
     except:
-        echo("Options file [server_options." + sLang + ".ini] not found or not readable")
+        echo("Options file [grammalecte-server-options." + sLang + ".ini] not found or not readable")
         exit()
     try:
         dGCOpt = { k: bool(int(v))  for k, v in xConfig._sections['gc_options'].items() }
     except:
-        echo("Error in options file [server_options." + sLang + ".ini]. Dropped.")
+        echo("Error in options file [grammalecte-server-options." + sLang + ".ini]. Dropped.")
         traceback.print_exc()
         exit()
     return dGCOpt
@@ -129,21 +126,15 @@ def genUserId ():
         i += 1
 
 
-def parseParagraph (iParagraph, sText, oTokenizer, oDict, dOptions, bDebug=False, bEmptyIfNoErrors=False):
-    aGrammErrs = gce.parse(sText, "FR", bDebug, dOptions)
-    aGrammErrs = list(aGrammErrs)
-    aSpellErrs = []
-    for dToken in oTokenizer.genTokens(sText):
-        if dToken['sType'] == "WORD" and not oDict.isValidToken(dToken['sValue']):
-            aSpellErrs.append(dToken)
-    if bEmptyIfNoErrors and not aGrammErrs and not aSpellErrs:
-        return ""
-    return "  " + json.dumps({ "iParagraph": iParagraph, "lGrammarErrors": aGrammErrs, "lSpellingErrors": aSpellErrs }, ensure_ascii=False)
-    
-
 if __name__ == '__main__':
 
-    gce.load("Server")
+    # initialisation
+    oGrammarChecker = grammalecte.GrammarChecker("fr", "Server")
+    oSpellChecker = oGrammarChecker.getSpellChecker()
+    oLexicographer = oGrammarChecker.getLexicographer()
+    oTextFormatter = oGrammarChecker.getTextFormatter()
+    gce = oGrammarChecker.getGCEngine()
+
     echo("Grammalecte v{}".format(gce.version))
     dServerOptions = getServerOptions()
     dGCOptions = getConfigOptions("fr")
@@ -151,9 +142,6 @@ if __name__ == '__main__':
         gce.setOptions(dGCOptions)
     dServerGCOptions = gce.getOptions()
     echo("Grammar options:\n" + " | ".join([ k + ": " + str(v)  for k, v in sorted(dServerGCOptions.items()) ]))
-    oDict = gce.getDictionary()
-    oTokenizer = tkz.Tokenizer("fr")
-    oTF = tf.TextFormatter()
     dUser = {}
     userGenerator = genUserId()
 
@@ -180,7 +168,6 @@ if __name__ == '__main__':
         #if len(lang) != 2 or lang != "fr":
         #    abort(404, "No grammar checker available for lang “" + str(lang) + "”")
         bComma = False
-        bTF = bool(request.forms.tf)
         dOptions = None
         sError = ""
         if request.cookies.user_id:
@@ -197,9 +184,9 @@ if __name__ == '__main__':
                 sError = "request options not used"
         sJSON = '{ "program": "grammalecte-fr", "version": "'+gce.version+'", "lang": "'+gce.lang+'", "error": "'+sError+'", "data" : [\n'
         for i, sText in enumerate(txt.getParagraph(request.forms.text), 1):
-            if bTF:
-                sText = oTF.formatText(sText)
-            sText = parseParagraph(i, sText, oTokenizer, oDict, dOptions, bEmptyIfNoErrors=True)
+            if bool(request.forms.tf):
+                sText = oTextFormatter.formatText(sText)
+            sText = oGrammarChecker.generateParagraphAsJSON(i, sText, dOptions=dOptions, bEmptyIfNoErrors=True, bReturnText=bool(request.forms.tf))
             if sText:
                 if bComma:
                     sJSON += ",\n"
@@ -231,7 +218,7 @@ if __name__ == '__main__':
 
     @app.route("/format_text/fr", method="POST")
     def formatText ():
-        return oTF.formatText(request.forms.text)
+        return oTextFormatter.formatText(request.forms.text)
 
     #@app.route('/static/<filepath:path>')
     #def server_static (filepath):

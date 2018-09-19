@@ -8,33 +8,34 @@ import traceback
 #import unicodedata
 from itertools import chain
 
-from ..ibdawg import IBDAWG
-from ..echo import echo
+from ..graphspell.spellchecker import SpellChecker
+from ..graphspell.echo import echo
 from . import gc_options
 
 
 __all__ = [ "lang", "locales", "pkg", "name", "version", "author", \
-            "load", "parse", "getDictionary", \
+            "load", "parse", "getSpellChecker", \
             "setOption", "setOptions", "getOptions", "getDefaultOptions", "getOptionsLabels", "resetOptions", "displayOptions", \
             "ignoreRule", "resetIgnoreRules", "reactivateRule", "listRules", "displayRules" ]
 
-__version__ = "0.5.18"
+__version__ = "0.6.4"
 
 
 lang = "fr"
-locales = {'fr-FR': ['fr', 'FR', ''], 'fr-BE': ['fr', 'BE', ''], 'fr-CA': ['fr', 'CA', ''], 'fr-CH': ['fr', 'CH', ''], 'fr-LU': ['fr', 'LU', ''], 'fr-MC': ['fr', 'MC', ''], 'fr-BF': ['fr', 'BF', ''], 'fr-CI': ['fr', 'CI', ''], 'fr-SN': ['fr', 'SN', ''], 'fr-ML': ['fr', 'ML', ''], 'fr-NE': ['fr', 'NE', ''], 'fr-TG': ['fr', 'TG', ''], 'fr-BJ': ['fr', 'BJ', '']}
+locales = {'fr-FR': ['fr', 'FR', ''], 'fr-BE': ['fr', 'BE', ''], 'fr-CA': ['fr', 'CA', ''], 'fr-CH': ['fr', 'CH', ''], 'fr-LU': ['fr', 'LU', ''], 'fr-BF': ['fr', 'BF', ''], 'fr-BJ': ['fr', 'BJ', ''], 'fr-CD': ['fr', 'CD', ''], 'fr-CI': ['fr', 'CI', ''], 'fr-CM': ['fr', 'CM', ''], 'fr-MA': ['fr', 'MA', ''], 'fr-ML': ['fr', 'ML', ''], 'fr-MU': ['fr', 'MU', ''], 'fr-NE': ['fr', 'NE', ''], 'fr-RE': ['fr', 'RE', ''], 'fr-SN': ['fr', 'SN', ''], 'fr-TG': ['fr', 'TG', '']}
 pkg = "grammalecte"
 name = "Grammalecte"
-version = "0.5.18"
+version = "0.6.4"
 author = "Olivier R."
 
-# grammar rules and dictionary
-_sContext = ""                          # what software is running
-_rules = None                           # module gc_rules
+_rules = None                               # module gc_rules
+
+# data
+_sAppContext = ""                           # what software is running
 _dOptions = None
 _aIgnoredRules = set()
-_oDict = None
-_dAnalyses = {}                         # cache for data from dictionary
+_oSpellChecker = None
+_dAnalyses = {}                             # cache for data from dictionary
 
 
 
@@ -287,12 +288,12 @@ except ImportError:
 
 
 def load (sContext="Python"):
-    global _oDict
-    global _sContext
+    global _oSpellChecker
+    global _sAppContext
     global _dOptions
     try:
-        _oDict = IBDAWG("French.bdic")
-        _sContext = sContext
+        _oSpellChecker = SpellChecker("fr", "fr.bdic", "", "", "")
+        _sAppContext = sContext
         _dOptions = dict(gc_options.getOptions(sContext))   # duplication necessary, to be able to reset to default
     except:
         traceback.print_exc()
@@ -314,7 +315,7 @@ def getOptions ():
 
 
 def getDefaultOptions ():
-    return dict(gc_options.getOptions(_sContext))
+    return dict(gc_options.getOptions(_sAppContext))
 
 
 def getOptionsLabels (sLang):
@@ -329,11 +330,11 @@ def displayOptions (sLang):
 
 def resetOptions ():
     global _dOptions
-    _dOptions = dict(gc_options.getOptions(_sContext))
+    _dOptions = dict(gc_options.getOptions(_sAppContext))
 
 
-def getDictionary ():
-    return _oDict
+def getSpellChecker ():
+    return _oSpellChecker
 
 
 def _getRules (bParagraph):
@@ -397,9 +398,9 @@ def displayInfo (dDA, tWord):
 
 
 def _storeMorphFromFSA (sWord):
-    "retrieves morphologies list from _oDict -> _dAnalyses"
+    "retrieves morphologies list from _oSpellChecker -> _dAnalyses"
     global _dAnalyses
-    _dAnalyses[sWord] = _oDict.getMorph(sWord)
+    _dAnalyses[sWord] = _oSpellChecker.getMorph(sWord)
     return True  if _dAnalyses[sWord]  else False
 
 
@@ -474,15 +475,15 @@ def stem (sWord):
 
 def nextword (s, iStart, n):
     "get the nth word of the input string or empty string"
-    m = re.match("( +[\\w%-]+){" + str(n-1) + "} +([\\w%-]+)", s[iStart:])
+    m = re.match("(?: +[\\w%-]+){" + str(n-1) + "} +([\\w%-]+)", s[iStart:])
     if not m:
         return None
-    return (iStart+m.start(2), m.group(2))
+    return (iStart+m.start(1), m.group(1))
 
 
 def prevword (s, iEnd, n):
     "get the (-)nth word of the input string or empty string"
-    m = re.search("([\\w%-]+) +([\\w%-]+ +){" + str(n-1) + "}$", s[:iEnd])
+    m = re.search("([\\w%-]+) +(?:[\\w%-]+ +){" + str(n-1) + "}$", s[:iEnd])
     if not m:
         return None
     return (m.start(1), m.group(1))
@@ -810,7 +811,7 @@ def suggVerb (sFlex, sWho, funcSugg2=None):
             # we get the tense
             aTense = set()
             for sMorph in _dAnalyses.get(sFlex, []): # we don’t check if word exists in _dAnalyses, for it is assumed it has been done before
-                for m in re.finditer(sStem+" .*?(:(?:Y|I[pqsf]|S[pq]|K|P))", sMorph):
+                for m in re.finditer(">"+sStem+" .*?(:(?:Y|I[pqsf]|S[pq]|K|P))", sMorph):
                     # stem must be used in regex to prevent confusion between different verbs (e.g. sauras has 2 stems: savoir and saurer)
                     if m:
                         if m.group(1) == ":Y":
@@ -954,13 +955,13 @@ def suggPlur (sFlex, sWordToAgree=None):
     aSugg = set()
     if "-" not in sFlex:
         if sFlex.endswith("l"):
-            if sFlex.endswith("al") and len(sFlex) > 2 and _oDict.isValid(sFlex[:-1]+"ux"):
+            if sFlex.endswith("al") and len(sFlex) > 2 and _oSpellChecker.isValid(sFlex[:-1]+"ux"):
                 aSugg.add(sFlex[:-1]+"ux")
-            if sFlex.endswith("ail") and len(sFlex) > 3 and _oDict.isValid(sFlex[:-2]+"ux"):
+            if sFlex.endswith("ail") and len(sFlex) > 3 and _oSpellChecker.isValid(sFlex[:-2]+"ux"):
                 aSugg.add(sFlex[:-2]+"ux")
-        if _oDict.isValid(sFlex+"s"):
+        if _oSpellChecker.isValid(sFlex+"s"):
             aSugg.add(sFlex+"s")
-        if _oDict.isValid(sFlex+"x"):
+        if _oSpellChecker.isValid(sFlex+"x"):
             aSugg.add(sFlex+"x")
     if mfsp.hasMiscPlural(sFlex):
         aSugg.update(mfsp.getMiscPlural(sFlex))
@@ -975,11 +976,11 @@ def suggSing (sFlex):
         return ""
     aSugg = set()
     if sFlex.endswith("ux"):
-        if _oDict.isValid(sFlex[:-2]+"l"):
+        if _oSpellChecker.isValid(sFlex[:-2]+"l"):
             aSugg.add(sFlex[:-2]+"l")
-        if _oDict.isValid(sFlex[:-2]+"il"):
+        if _oSpellChecker.isValid(sFlex[:-2]+"il"):
             aSugg.add(sFlex[:-2]+"il")
-    if _oDict.isValid(sFlex[:-1]):
+    if _oSpellChecker.isValid(sFlex[:-1]):
         aSugg.add(sFlex[:-1])
     if aSugg:
         return "|".join(aSugg)
@@ -1168,14 +1169,13 @@ def hasSimil (sWord, sPattern=None):
     return phonet.hasSimil(sWord, sPattern)
 
 
-def suggSimil (sWord, sPattern=None):
+def suggSimil (sWord, sPattern=None, bSubst=False):
     "return list of words phonetically similar to sWord and whom POS is matching sPattern"
     # we don’t check if word exists in _dAnalyses, for it is assumed it has been done before
     aSugg = phonet.selectSimil(sWord, sPattern)
     for sMorph in _dAnalyses.get(sWord, []):
-        for e in conj.getSimil(sWord, sMorph, sPattern):
-            aSugg.add(e)
-        #aSugg = aSugg.union(conj.getSimil(sWord, sMorph))
+        aSugg.update(conj.getSimil(sWord, sMorph, bSubst))
+        break
     if aSugg:
         return "|".join(aSugg)
     return ""
@@ -1262,33 +1262,45 @@ def undoLigature (c):
 
 
 
+
+_xNormalizedCharsForInclusiveWriting = str.maketrans({
+    '(': '_',  ')': '_',
+    '.': '_',  '·': '_',
+    '–': '_',  '—': '_',
+    '/': '_'
+ })
+
+
+def normalizeInclusiveWriting (sToken):
+    return sToken.translate(_xNormalizedCharsForInclusiveWriting)
+
+
+
 # generated code, do not edit
-def c_typo_cohérence_guillemets1_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[:m.start()], r"\w$")
-def c_typo_cohérence_guillemets1_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], r"^\w")
-def c_typo_cohérence_guillemets2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[:m.start()], r"\w$")
-def c_typo_cohérence_guillemets2_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], r"^\w")
 def p_p_URL2_1 (s, m):
     return m.group(1).capitalize()
 def p_p_sigle1_1 (s, m):
     return m.group(1).replace(".", "")+"."
 def c_p_sigle2_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search(r"(?i)^(?:i\.e\.|s\.[tv]\.p\.|e\.g\.|a\.k\.a\.|c\.q\.f\.d\.|b\.a\.|n\.b\.)$", m.group(0))
-def s_p_sigle2_1 (s, m):
-    return m.group(0).replace(".", "").upper()
 def c_p_sigle2_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(0).__len__() == 4
+def s_p_sigle2_2 (s, m):
+    return m.group(0).replace(".", "").upper() + "|" + m.group(0)[0:2] + " " + m.group(0)[2:4]
+def c_p_sigle2_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def s_p_sigle2_3 (s, m):
+    return m.group(0).replace(".", "").upper()
+def c_p_sigle2_4 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(0) != "b.a."
-def p_p_sigle2_2 (s, m):
+def p_p_sigle2_4 (s, m):
     return m.group(0).replace(".", "_")
 def p_p_sigle3_1 (s, m):
     return m.group(0).replace(".", "").replace("-","")
 def c_p_points_suspension_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("(?i)^etc", m.group(1))
 def c_p_prénom_lettre_point_patronyme_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":M[12]", False) and (morph(dDA, (m.start(3), m.group(3)), ":(?:M[12]|V)", False) or not _oDict.isValid(m.group(3)))
+    return morph(dDA, (m.start(1), m.group(1)), ":M[12]", False) and (morph(dDA, (m.start(3), m.group(3)), ":(?:M[12]|V)", False) or not _oSpellChecker.isValid(m.group(3)))
 def c_p_prénom_lettre_point_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":M[12]", False) and look(s[m.end():], "^\W+[a-zéèêîïâ]")
 def p_p_patronyme_composé_avec_le_la_les_1 (s, m):
@@ -1301,10 +1313,48 @@ def p_p_mot_entre_crochets_2 (s, m):
     return " " + m.group(1) + " "
 def c_p_mot_entre_crochets_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo
-def c_typo_écriture_épicène_pluriel_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return option("typo") and not m.group(0).endswith("·e·s")
+def c_typo_écriture_épicène_tous_toutes_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo")
+def p_typo_écriture_épicène_tous_toutes_2 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_ceux_celles_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo")
+def p_typo_écriture_épicène_ceux_celles_2 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_pluriel_eur_divers_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo") and m.group(2) != "se"
+def c_typo_écriture_épicène_pluriel_eur_divers_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo") and m.group(2) == "se"
+def p_typo_écriture_épicène_pluriel_eur_divers_3 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_pluriel_eux_euses_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo")
+def p_typo_écriture_épicène_pluriel_eux_euses_2 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_pluriel_aux_ales_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo")
+def p_typo_écriture_épicène_pluriel_aux_ales_2 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_pluriel_er_ère_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo")
+def p_typo_écriture_épicène_pluriel_er_ère_2 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_pluriel_if_ive_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo")
+def p_typo_écriture_épicène_pluriel_if_ive_2 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def p_typo_écriture_épicène_pluriel_e_1 (s, m):
+    return normalizeInclusiveWriting(m.group(0))
+def c_typo_écriture_épicène_pluriel_e_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return option("typo") and not m.group(0).endswith("les")
+def c_typo_écriture_épicène_pluriel_e_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).endswith("s") and not m.group(0).endswith("·e·s")
+def c_typo_écriture_épicène_pluriel_e_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and not m.group(0).endswith("e·s")
 def c_typo_écriture_épicène_singulier_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return option("typo") and not m.group(0).endswith("·e")
+    return option("typo") and (m.group(1) == "un" or m.group(1) == "Un")
+def c_typo_écriture_épicène_singulier_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and option("typo") and not m.group(0).endswith("·e")
 def c_majuscule_après_point_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("(?i)^(?:etc|[A-Z]|chap|cf|fig|hab|litt|circ|coll|r[eé]f|étym|suppl|bibl|bibliogr|cit|op|vol|déc|nov|oct|janv|juil|avr|sept)$", m.group(1)) and morph(dDA, (m.start(1), m.group(1)), ":", False) and morph(dDA, (m.start(2), m.group(2)), ":", False)
 def s_majuscule_après_point_1 (s, m):
@@ -1315,10 +1365,16 @@ def s_majuscule_en_début_phrase_1 (s, m):
     return m.group(1).capitalize()
 def c_virgule_manquante_avant_car_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(1), m.group(1)), ":[DR]", False)
+def c_virgule_manquante_avant_mais_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(1), m.group(1)), ">(?:[mtscl]es|[nv]os|quels) ", False)
+def c_virgule_manquante_avant_donc_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(1), m.group(1)), ":V", False)
+def c_virg_virgule_après_point_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not re.search("^(?:etc|[A-Z]|fig|hab|litt|circ|coll|ref|étym|suppl|bibl|bibliogr|cit|vol|déc|nov|oct|janv|juil|avr|sept|pp?)$", m.group(1))
 def c_typo_espace_manquant_après1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(1).isdigit()
 def c_typo_espace_manquant_après3_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return (m.group(1).__len__() > 1 and not m.group(1).isdigit() and _oDict.isValid(m.group(1))) or look(s[m.end():], "^’")
+    return (m.group(1).__len__() > 1 and not m.group(1).isdigit() and _oSpellChecker.isValid(m.group(1))) or look(s[m.end():], "^’")
 def s_typo_point_après_titre_1 (s, m):
     return m.group(1)[0:-1]
 def s_typo_point_après_numéro_1 (s, m):
@@ -1327,8 +1383,8 @@ def c_typo_points_suspension1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], "(?i)etc$")
 def s_typo_points_suspension2_1 (s, m):
     return m.group(0).replace("...", "…").rstrip(".")
-def c_typo_virgule_après_point_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not re.search("^(?:etc|[A-Z]|fig|hab|litt|circ|coll|ref|étym|suppl|bibl|bibliogr|cit|vol|déc|nov|oct|janv|juil|avr|sept|pp?)$", m.group(1))
+def s_typo_virgules_points_1 (s, m):
+    return m.group(0).replace(",", ".").replace("...", "…")
 def s_typo_ponctuation_superflue1_1 (s, m):
     return ",|" + m.group(1)
 def s_typo_ponctuation_superflue2_1 (s, m):
@@ -1343,6 +1399,8 @@ def c_typo_signe_multiplication_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(0).startswith("0x")
 def s_ligatures_typographiques_1 (s, m):
     return undoLigature(m.group(0))
+def c_typo_apostrophe_incorrecte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not (m.group(2).__len__() == 1  and  m.group(1).endswith("′ "))
 def s_typo_apostrophe_manquante_prudence1_1 (s, m):
     return m.group(1)[:-1]+"’"
 def c_typo_apostrophe_manquante_prudence2_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1367,10 +1425,28 @@ def s_nf_norme_française_1 (s, m):
     return formatNF(m.group(0))
 def s_chim_molécules_1 (s, m):
     return m.group(0).replace("2", "₂").replace("3", "₃").replace("4", "₄")
+def c_typo_cohérence_guillemets_chevrons_ouvrants_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[:m.start()], r"\w$")
+def c_typo_cohérence_guillemets_chevrons_ouvrants_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[m.end():], r"^\w")
+def c_typo_cohérence_guillemets_chevrons_fermants_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[:m.start()], r"\w$")
+def c_typo_cohérence_guillemets_chevrons_fermants_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[m.end():], r"^\w")
+def c_typo_cohérence_guillemets_doubles_ouvrants_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[:m.start()], r"\w$")
+def c_typo_cohérence_guillemets_doubles_fermants_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[:m.start()], r"\w$")
+def c_typo_cohérence_guillemets_doubles_fermants_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[m.end():], r"^\w")
+def c_typo_guillemet_simple_ouvrant_non_fermé_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[:m.start()], r" $") or look(s[:m.start()], "^ *$|, *$")
+def c_typo_guillemet_simple_fermant_non_ouvert_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[m.end():], "^ ") or look(s[m.end():], "^ *$|^,")
 def c_unit_nbsp_avant_unités2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(3), m.group(3)), ";S", ":[VCR]") or mbUnit(m.group(3)) or not _oDict.isValid(m.group(3))
+    return morphex(dDA, (m.start(3), m.group(3)), ";S", ":[VCR]") or mbUnit(m.group(3)) or not _oSpellChecker.isValid(m.group(3))
 def c_unit_nbsp_avant_unités3_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return (m.group(2).__len__() > 4 and not _oDict.isValid(m.group(3))) or morphex(dDA, (m.start(3), m.group(3)), ";S", ":[VCR]") or mbUnit(m.group(3))
+    return (m.group(2).__len__() > 4 and not _oSpellChecker.isValid(m.group(3))) or morphex(dDA, (m.start(3), m.group(3)), ";S", ":[VCR]") or mbUnit(m.group(3))
 def c_num_grand_nombre_soudé_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], "NF[  -]?(C|E|P|Q|X|Z|EN(?:[  -]ISO|)) *$")
 def c_num_grand_nombre_soudé_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1464,19 +1540,29 @@ def c_p_pas_assez_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_titres_et_ordinaux_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1) != "I"
 def c_p_fusion_mots_multiples_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return _oDict.isValid(m.group(0).replace(" ", "_"))
+    return _oSpellChecker.isValid(m.group(0).replace(" ", "_"))
 def p_p_fusion_mots_multiples_1 (s, m):
     return m.group(0).replace(" ", "_")
-def c_tu_t_euphonique8_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) != "-t-"
+def c_tu_t_euphonique_incorrect_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return re.search("(?i)^(?:ils|elles|tu)$", m.group(2))
+def c_tu_t_euphonique_incorrect_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and m.group(1) != "-t-" and m.group(1) != "-T-"
 def c_tu_trait_union_douteux_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return _oDict.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":", False)
+    return _oSpellChecker.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":", False)
 def c_tu_ce_cette_ces_nom_là1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NB]", False)
 def c_tu_ce_cette_ces_nom_là2_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NB]", False) and look(s[m.end():], "^ *$|^,")
 def c_tu_préfixe_ex_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":N") and not re.search("(?i)^(?:aequo|nihilo|cathedra|absurdo|abrupto)", m.group(1))
+def c_tu_préfixe_in_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not look(s[:m.start()], r"(?i)\b(?:drive|plug|sit) +$")
+def c_tu_préfixe_in_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return re.search("^(?:dix-huit|douze|seize|folio|octavo|quarto|plano)$", m.group(2))
+def s_tu_préfixe_in_2 (s, m):
+    return m.group(0).replace(" ", "-")
+def c_tu_préfixe_in_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":N:m")
 def c_tu_préfixe_mi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":[NAQ]", False)
 def c_tu_préfixe_quasi_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1484,27 +1570,25 @@ def c_tu_préfixe_quasi_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_tu_préfixe_semi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":G")
 def c_tu_préfixe_xxxo_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return _oDict.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":", False)
+    return _oSpellChecker.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":", False)
 def c_tu_préfixe_pseudo_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":N")
 def c_tu_préfixe_pseudo_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":N")
+    return bCondMemo
 def c_tu_préfixe_divers_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return _oDict.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":", False) and morph(dDA, prevword1(s, m.start()), ":D", False, not bool(re.search("(?i)^(?:s(?:ans|ous)|non)$", m.group(1))))
+    return _oSpellChecker.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":", False) and morph(dDA, prevword1(s, m.start()), ":D", False, not bool(re.search("(?i)^(?:s(?:ans|ous)|non)$", m.group(1))))
 def c_tu_mots_composés_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return _oDict.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":N", False) and morph(dDA, prevword1(s, m.start()), ":(?:D|V0e)", False, True) and not (morph(dDA, (m.start(1), m.group(1)), ":G", False) and morph(dDA, (m.start(2), m.group(2)), ":[GYB]", False))
+    return _oSpellChecker.isValid(m.group(1)+"-"+m.group(2)) and analyse(m.group(1)+"-"+m.group(2), ":N", False) and morph(dDA, prevword1(s, m.start()), ":(?:D|V0e)", False, True) and not (morph(dDA, (m.start(1), m.group(1)), ":G", False) and morph(dDA, (m.start(2), m.group(2)), ":[GYB]", False))
 def s_tu_aller_retour_1 (s, m):
     return m.group(0).replace(" ", "-")
 def s_tu_arc_en_ciel_1 (s, m):
     return m.group(0).replace(" ", "-")
-def c_tu_bouche_à_oreille_1 (s, sx, m, dDA, sCountry, bCondMemo):
+def c_tu_bouche_à_oreille_bouche_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, prevword1(s, m.start()), ":D", False)
-def s_tu_bouche_à_oreille_1 (s, m):
+def s_tu_bouche_à_oreille_bouche_1 (s, m):
     return m.group(0).replace(" ", "-")
 def s_tu_celui_celle_là_ci_1 (s, m):
     return m.group(0).replace(" ", "-").replace("si", "ci")
-def c_tu_est_ce_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, prevword1(s, m.start()), ":Cs", False, True)
 def s_tu_grand_père_mère_1 (s, m):
     return m.group(0).replace(" ", "-")
 def c_tu_nord_sud_est_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1517,6 +1601,8 @@ def s_tu_stock_option_1 (s, m):
     return m.group(0).replace(" ", "-")
 def c_tu_soi_disant_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not ( morph(dDA, prevword1(s, m.start()), ":R", False) and look(s[m.end():], "^ +qu[e’]") )
+def c_tu_est_ce_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(2), m.group(2)), ":", ":N.*:[me]:[si]|>qui ") and morph(dDA, prevword1(s, m.start()), ":Cs", False, True)
 def c_tu_pronom_même_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[m.end():], "^ +s(?:i |’)")
 def s_tu_nombres_1 (s, m):
@@ -1557,10 +1643,52 @@ def s_typo_apostrophe_manquante_audace2_1 (s, m):
     return m.group(1)[:-1]+"’"
 def c_typo_À_début_phrase1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[GNAY]", ":(?:Q|3s)|>(?:priori|post[eé]riori|contrario|capella|fortiori) ") or (m.group(2) == "bientôt" and look(s[m.end():], "^ *$|^,"))
+def s_maj_accents_1 (s, m):
+    return "É"+m.group(0)[1:]
+def p_maj_accents_2 (s, m):
+    return "É"+m.group(0)[1:]
 def c_d_dans_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":D.*:p|>[a-z]+ièmes ", False, False)
 def d_d_dans_1 (s, m, dDA):
     return select(dDA, m.start(0), m.group(0), ":R")
+def c_d_ton_son_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:le|ce[st]?|ton|mon|son|quel(?:que|)s?|[nv]otre|un|leur|ledit|dudit) ")
+def d_d_ton_son_1 (s, m, dDA):
+    return exclude(dDA, m.start(2), m.group(2), ":D")
+def c_d_je_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, prevword1(s, m.start()), ":1s", False, False)
+def d_d_je_le_la_les_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
+def c_d_tu_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, prevword1(s, m.start()), ":2s", False, False)
+def d_d_tu_le_la_les_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
+def c_d_il_elle_on_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, prevword1(s, m.start()), ":3s", False, False)
+def d_d_il_elle_on_le_la_les_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
+def c_d_nous_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, prevword1(s, m.start()), ":1p", False, False)
+def d_d_nous_le_la_les_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
+def c_d_vous_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, prevword1(s, m.start()), ":2p", False, False)
+def d_d_vous_le_la_les_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
+def c_d_nous_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(2), m.group(2)), ":1p", False)
+def d_d_nous_1 (s, m, dDA):
+    return exclude(dDA, m.start(1), m.group(1), ":Os")
+def c_d_vous_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(2), m.group(2)), ":2p", False)
+def d_d_vous_1 (s, m, dDA):
+    return exclude(dDA, m.start(1), m.group(1), ":Os")
+def c_d_ils_elles_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, prevword1(s, m.start()), ":3p", False, False)
+def d_d_ils_elles_le_la_les_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
+def d_d_ne_me_te_te_le_la_leur_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":Oo")
 def c_d_ne_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(1), m.group(1)), ":(?:O[sp]|X)", False)
 def d_d_ne_verbe_1 (s, m, dDA):
@@ -1585,6 +1713,10 @@ def c_d_nom_propre_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":M") and m.group(2).islower() and morphex(dDA, (m.start(2), m.group(2)), ":[123][sg]", ":Q") and morph(dDA, (m.start(2), m.group(2)), ":N", False) and morph(dDA, prevword1(s, m.start()), ":Cs", False, True)
 def d_d_nom_propre_verbe_1 (s, m, dDA):
     return select(dDA, m.start(2), m.group(2), ":[123][sp]")
+def c_d_nom_propre_verbe_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":M", False) and morphex(dDA, (m.start(2), m.group(2)), ":[123]s|>(?:[nmts]e|nous|vous) ", ":A") and look(s[:m.start()], "^ *$|, *$")
+def d_d_nom_propre_verbe_2 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":M")
 def d_d_que_combien_pourquoi_en_y_verbe_1 (s, m, dDA):
     return exclude(dDA, m.start(1), m.group(1), ":E")
 def c_d_aucun_non_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1656,7 +1788,7 @@ def c_ocr_de_des2_2 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_ocr_de_la_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], r"(?i)\bau ")
 def c_ocr_du_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":[NA]:[me]:[si]", ":Y")
+    return morph(dDA, (m.start(2), m.group(2)), ":[NA]:[me]:[si]", ":Y")
 def c_ocr_elle_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(0).endswith("e") and ( morph(dDA, prevword1(s, m.start()), ":R", False, True) or isNextVerb(dDA, s[m.end():], m.end()) )
 def c_ocr_elle_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1686,15 +1818,15 @@ def c_ocr_exclamation2_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_ocr_lv_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(0).istitle() and look(s[:m.start()], r"(?i)\w") and morphex(dDA, (m.start(0), m.group(0)), ":", ":M")
 def c_ocr_lv_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return _oDict.isValid(m.group(1))
+    return _oSpellChecker.isValid(m.group(1))
 def c_ocr_lv_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo
 def c_ocr_lp_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return look(s[:m.start()], r"(?i)\w") and morphex(dDA, (m.start(0), m.group(0)), ":", ":M") and _oDict.isValid(m.group(1))
+    return look(s[:m.start()], r"(?i)\w") and morphex(dDA, (m.start(0), m.group(0)), ":", ":M") and _oSpellChecker.isValid(m.group(1))
 def c_ocr_l_était_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], r"(?i)\w")
 def s_ocr_le_les_1 (s, m):
-    return m.group(0).replace("é", "e").replace("É", "E").replace("è", "e").replace("È", "E").replace("1", "l")
+    return m.group(0).replace("é", "e").replace("É", "E")
 def c_ocr_le_la_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(0).endswith("e")
 def c_ocr_le_la_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1773,9 +1905,11 @@ def c_ocr_casse1_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo and morphex(dDA, (m.start(0), m.group(0)), ":[123][sp]", ":[MNA]|>Est ")
 def s_ocr_casse1_3 (s, m):
     return m.group(0).lower()
-def c_ocr_casse2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return look(s[:m.start()], r"(?i)\w")
 def s_ocr_casse2_1 (s, m):
+    return m.group(1).lower()
+def c_ocr_casse3_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[:m.start()], r"(?i)\w")
+def s_ocr_casse3_1 (s, m):
     return m.group(0).lower()
 def c_ocr_lettres_isolées_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("[0-9aàAÀyYdlnmtsjcçDLNMTSJCÇ_]", m.group(0)) and not look(s[:m.start()], r"\d +$") and not (m.group(0).isupper() and look(sx[m.end():], r"^\."))
@@ -1784,15 +1918,15 @@ def c_ocr_caractères_rares_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_double_négation_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":D:[me]" ,False, False)
 def s_incohérences_globales1_1 (s, m):
-    return suggSimil(m.group(2), ":[NA].*:[pi]")
+    return suggSimil(m.group(2), ":[NA].*:[pi]", True)
 def s_incohérences_globales2_1 (s, m):
-    return suggSimil(m.group(2), ":[NA].*:[si]")
+    return suggSimil(m.group(2), ":[NA].*:[si]", True)
 def c_incohérence_globale_au_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(2).isupper()
 def c_incohérence_globale_au_qqch_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ">(?:[cdlmst]es|[nv]os|cettes?|[mts]a|mon|je|tu|ils?|elle?|[vn]ous|on|parce) ", False)
 def s_incohérence_globale_au_qqch_2 (s, m):
-    return suggSimil(m.group(2), ":[NA].*:[si]")
+    return suggSimil(m.group(2), ":[NA].*:[si]", True)
 def c_incohérence_globale_au_qqch_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo and morph(dDA, (m.start(2), m.group(2)), ">quelle ", False)
 def c_incohérence_globale_au_qqch_4 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1802,13 +1936,13 @@ def c_incohérence_globale_aux_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_incohérence_globale_aux_qqch_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ">(?:[cdlmst]es|[nv]os|cettes?|[mts]a|mon|je|tu|ils?|elle?|[vn]ous|on|parce) ", False)
 def s_incohérence_globale_aux_qqch_2 (s, m):
-    return suggSimil(m.group(2), ":[NA].*:[pi]")
+    return suggSimil(m.group(2), ":[NA].*:[pi]", True)
 def c_incohérence_globale_aux_qqch_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo and morph(dDA, (m.start(2), m.group(2)), ">quelle ", False)
 def c_incohérence_globale_aux_qqch_4 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo and m.group(2) == "combien" and morph(dDA, nextword1(s, m.end()), ":[AY]", False)
 def s_incohérences_globales3_1 (s, m):
-    return suggSimil(m.group(2), ":[NA].*:[pi]")
+    return suggSimil(m.group(2), ":[NA].*:[pi]", True)
 def c_bs_avoir_été_chez_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("(?i)^avoir$", m.group(1)) and morph(dDA, (m.start(1), m.group(1)), ">avoir ", False)
 def c_bs_à_date_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1863,98 +1997,112 @@ def c_gn_mon_ton_son_euphonie_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ">[aâeéèêiîoôuûyœæ].+:[NAQ].*:f", ":[eGW]")
 def s_gn_mon_ton_son_euphonie_1 (s, m):
     return m.group(1).replace("a", "on")
+def c_conf_à_le_la_les_leur_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(1), m.group(1)), ":", ":[GNAWMBY]")
+def s_conf_à_le_la_les_leur_1 (s, m):
+    return suggSimil(m.group(1), ":[NA]", True)
 def c_conf_en_mts_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(3), m.group(3)), ":[123][sp]", ":[PY]")
+    return morphex(dDA, (m.start(3), m.group(3)), ":[123][sp]", ":[PY]") and not m.group(0).endswith("n’importe")
 def c_conf_en_mts_verbe_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(3), m.group(3)), ":3p", False)
 def s_conf_en_mts_verbe_2 (s, m):
     return suggVerb(m.group(2), ":P")
 def c_conf_en_mts_verbe_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not (m.group(1).endswith("se ") and morph(dDA, (m.start(3), m.group(3)), ":[NA]", False))
-def c_conf_malgré_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":", ":[GNAWM]")
-def s_conf_malgré_le_la_les_1 (s, m):
-    return suggSimil(m.group(1), ":[NA]")
+def c_conf_malgré_le_la_les_leur_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(1), m.group(1)), ":", ":[GNAWMB]")
+def s_conf_malgré_le_la_les_leur_1 (s, m):
+    return suggSimil(m.group(1), ":[NA]", True)
 def c_conf_ma_ta_cette_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower()
 def s_conf_ma_ta_cette_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:[fe]:[si]")
+    return suggSimil(m.group(2), ":[NA]:[fe]:[si]", True)
 def c_conf_sa_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":N.*:[fe]|:[AW]") and m.group(2)[0].islower() or m.group(2) == "va"
+    return m.group(2)[0].islower() and morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":(?:N.*:[fe]|A|W)")
 def c_conf_sa_verbe_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower() and hasSimil(m.group(2))
-def s_conf_sa_verbe_2 (s, m):
-    return suggSimil(m.group(2), ":[NA]:[fe]:[si]")
+    return morph(dDA, (m.start(2), m.group(2)), "V.....[pqx]", False)
+def c_conf_sa_verbe_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def c_conf_sa_verbe_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return hasSimil(m.group(2))
+def s_conf_sa_verbe_4 (s, m):
+    return suggSimil(m.group(2), ":[NA]:[fe]:[si]", True)
 def c_conf_du_cet_au_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower() and not (m.group(2) == "sortir" and re.search(r"(?i)au", m.group(1)))
 def s_conf_du_cet_au_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:[me]:[si]")
+    return suggSimil(m.group(2), ":[NA]:[me]:[si]", True)
 def c_conf_ce_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]:.:[si]|:V0e.*:3[sp]|>devoir") and m.group(2)[0].islower() and hasSimil(m.group(2))
 def s_conf_ce_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:[me]:[si]")
+    return suggSimil(m.group(2), ":[NA]:[me]:[si]", True)
 def c_conf_mon_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower()
 def s_conf_mon_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:.:[si]")
+    return suggSimil(m.group(2), ":[NA]:.:[si]", True)
 def c_conf_ton_son_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":V.*:(?:Y|[123][sp])") and m.group(1)[0].islower() and look(s[:m.start()], "^ *$|, *$")
 def s_conf_ton_son_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":[NA]:[me]:[si]")
+    return suggSimil(m.group(1), ":[NA]:[me]:[si]", True)
 def c_conf_det_plur_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower() and not re.search(r"(?i)^quelques? soi(?:ent|t|s)\b", m.group(0))
 def s_conf_det_plur_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:.:[pi]")
+    return suggSimil(m.group(2), ":[NA]:.:[pi]", True)
 def c_conf_auxdits_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower()
 def s_conf_auxdits_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:[me]:[pi]")
+    return suggSimil(m.group(2), ":[NA]:[me]:[pi]", True)
 def c_conf_auxdites_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V.*:(?:Y|[123][sp])", ":[NAQ]") and m.group(2)[0].islower()
 def s_conf_auxdites_verbe_1 (s, m):
-    return suggSimil(m.group(2), ":[NA]:[fe]:[pi]")
+    return suggSimil(m.group(2), ":[NA]:[fe]:[pi]", True)
 def c_conf_de_la_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[123][sp]", ":[NAQ]")
-def s_conf_de_la_vconj_1 (s, m):
-    return suggSimil(m.group(1), ":(?:[NA]:[fe]:[si])")
+def c_conf_de_la_vconj_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(1), m.group(1)), ":V1.*:(?:Iq|Ip:2p)", ":1p")
+def s_conf_de_la_vconj_2 (s, m):
+    return suggVerbInfi(m.group(1))
+def c_conf_de_la_vconj_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def s_conf_de_la_vconj_3 (s, m):
+    return suggSimil(m.group(1), ":(?:[NA]:[fe]:[si])", False)
 def c_conf_de_le_nom_ou_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[me]", ":[YG]") and m.group(2)[0].islower()
 def c_conf_de_le_nom_ou_vconj_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[123][sp]", False)
 def s_conf_de_le_nom_ou_vconj_2 (s, m):
-    return suggSimil(m.group(2), ":Y")
+    return suggVerbInfi(m.group(2))
 def c_conf_de_l_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[123][sp]", ":[NAQ]")
 def s_conf_de_l_vconj_1 (s, m):
-    return suggSimil(m.group(1), ":(?:[NA]:.:[si])")
+    return suggSimil(m.group(1), ":[NA]:.:[si]", True)
 def c_conf_un_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":(?:Y|[123][sp])") and not look(s[:m.start()], "(?i)(?:dont|sauf|un à) +$")
 def s_conf_un_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":[NAQ]:[me]:[si]")
+    return suggSimil(m.group(1), ":[NAQ]:[me]:[si]", True)
 def c_conf_de_dès_par_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1)[0].islower() and morph(dDA, (m.start(1), m.group(1)), ":V.*:[123][sp]")
 def s_conf_de_dès_par_vconj_1 (s, m):
-    return suggSimil(m.group(1), ":[NA]")
+    return suggSimil(m.group(1), ":[NA]", True)
 def c_conf_d_une_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1)[0].islower() and morphex(dDA, (m.start(1), m.group(1)), ":V.*:[123][sp]", ":[GNA]") and not look(s[:m.start()], r"(?i)\b(?:plus|moins) +$")
 def s_conf_d_une_vconj_1 (s, m):
-    return suggSimil(m.group(1), ":[NA]")
+    return suggSimil(m.group(1), ":[NA]", True)
 def c_conf_il_on_pas_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":", ":(?:[123][sp]|O[onw]|X)|ou ") and morphex(dDA, prevword1(s, m.start()), ":", ":3s", True)
 def s_conf_il_on_pas_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":(?:3s|Oo)")
+    return suggSimil(m.group(1), ":(?:3s|Oo)", False)
 def c_conf_ils_pas_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":", ":(?:[123][sp]|O[onw]|X)|ou ") and morphex(dDA, prevword1(s, m.start()), ":", ":3p", True)
 def s_conf_ils_pas_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":(?:3p|Oo)")
+    return suggSimil(m.group(1), ":(?:3p|Oo)", False)
 def c_conf_je_pas_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":", ":(?:[123][sp]|O[onw]|X)") and morphex(dDA, prevword1(s, m.start()), ":", ":1s", True)
 def s_conf_je_pas_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":(?:1s|Oo)")
+    return suggSimil(m.group(1), ":(?:1s|Oo)", False)
 def c_conf_tu_pas_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":", ":(?:[123][sp]|O[onw]|X)") and morphex(dDA, prevword1(s, m.start()), ":", ":(?:2s|V0e)", True)
+    return morphex(dDA, (m.start(1), m.group(1)), ":", ":(?:[123][sp]|O[onw]|X)") and morphex(dDA, prevword1(s, m.start()), ":", ":(?:2s|V0e|R)", True)
 def s_conf_tu_pas_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":(?:2s|Oo)")
+    return suggSimil(m.group(1), ":(?:2s|Oo)", False)
 def c_conf_adj_part_présent1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":", ":P")
 def c_conf_adj_part_présent2_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1962,7 +2110,11 @@ def c_conf_adj_part_présent2_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_très_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":(?:Y|[123][sp])", ":[AQW]")
 def s_conf_très_verbe_1 (s, m):
-    return suggSimil(m.group(1), ":[AW]")
+    return suggSimil(m.group(1), ":[AW]", True)
+def c_conf_très_verbe_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">jeûne ", False)
+def s_conf_très_verbe_2 (s, m):
+    return m.group(1).replace("û", "u")
 def c_conf_trop_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[123][sp]", ":(?:[GNAQWM]|3p)") and not look(s[:m.start()], r"(?i)\bce que? ")
 def c_conf_presque_trop_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -1974,7 +2126,7 @@ def c_conf_sur_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_si_vconj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[123][sp]", ":[GNAQWMT]") and morphex(dDA, nextword1(s, m.end()), ":", ":D", True)
 def s_conf_si_vconj_1 (s, m):
-    return suggSimil(m.group(1), ":[AWGT]")
+    return suggSimil(m.group(1), ":[AWGT]", True)
 def c_conf_de_plus_en_plus_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y)", ":(?:[GAQW]|3p)") and not morph(dDA, prevword1(s, m.start()), ":V[123].*:[123][sp]|>(?:pouvoir|vouloir|falloir) ", False, False)
 def s_conf_de_plus_en_plus_verbe_1 (s, m):
@@ -1992,7 +2144,7 @@ def c_conf_a_à_être_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_a_à_l_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("(?i)^(?:côtés?|coups?|peu(?:-près|)|pics?|propos|valoir|plat-ventrismes?)", m.group(2))
 def c_conf_a_à_l_à_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return re.search("(?i)^(?:côtés?|coups?|peu(?:-pr(?:ès|êts?|és?)|)|pics?|propos|valoir|plat-ventrismes?)", m.group(2))
+    return re.search("(?i)^(?:côtés?|coups?|peu-près|pics?|propos|valoir|plat-ventrismes?)", m.group(2))
 def c_conf_a_à_il_on_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":3s", False, False)
 def c_conf_a_à_elle_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2060,7 +2212,7 @@ def c_conf_se_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_pour_ce_faire_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return (m.group(0).find(",") >= 0 or morphex(dDA, (m.start(2), m.group(2)), ":G", ":[AYD]"))
 def c_conf_qui_se_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":[NAQ].*:[me]") or look(s[:m.start()], r"(?i)\b[cs]e +")
+    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":[NAQ].*:[me]") or look(s[:m.start()], r"(?i)\b[cs]e +$")
 def c_conf_ce_ne_être_doit_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ">(?:être|pouvoir|devoir) .*:3s", False)
 def c_conf_ce_ne_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2070,9 +2222,17 @@ def c_conf_ce_nom1_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_ce_nom2_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":N.*:s", ":(?:A.*:[pi]|P|R)|>autour ")
 def c_conf_c_est4_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[WX]", False) and morph(dDA, (m.start(3), m.group(3)), ":[RD]|>pire ", False)
+    return morph(dDA, (m.start(2), m.group(2)), ":[WX]", ":N:.*:[pi]") and morph(dDA, (m.start(3), m.group(3)), ":[RD]|>pire ", False)
 def c_conf_ces_ses_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":N.*:p", ":(?:G|W|M|A.*:[si])")
+def c_conf_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(1).startswith("tenu") or look(s[:m.start()], "^ *$|, *$")
+def c_conf_en_fin_de_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).startswith("f")
+def c_conf_en_fin_de_compte_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).startswith("l")
+def c_régler_son_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">régler ", False)
 def c_conf_date1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[m.end():], "(?i)^ +(?:fra[iî]ches|dénoyautées|fourrées|sèches|séchées|cultivées|produites|muscade|medjool|Hamraya|deglet[ -]nour|kenta|allig|khouat)") or look(s[:m.start()], r"(?i)\b(?:confiture|crème|gâteau|mélasse|noyau|pâte|recette|sirop)[sx]? de +$|\b(?:moelleux|gateau|fondant|cake)[sx]? aux +$")
 def c_conf_dans1_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2080,9 +2240,9 @@ def c_conf_dans1_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_être_davantage_ppas_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":V0e", False) and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ]", ":G")
 def c_conf_davantage1_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":Q")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":Q|>(?:profiter|bénéficier) ") and not morph(dDA, nextword1(s, m.end()), ">(?:financi[eè]re?|pécuni(?:er|aire))s? ", False, False)
 def c_conf_davantage2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, (m.start(1), m.group(1)), ">(?:profiter|bénéficier) ", False)
+    return not morph(dDA, (m.start(1), m.group(1)), ">(?:profiter|bénéficier) ", False) and not morph(dDA, nextword1(s, m.end()), ">(?:financi[eè]re?|pécuni(?:er|aire))s? ", False, False)
 def c_conf_différent_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, prevword1(s, m.start()), ":W", False, False)
 def s_conf_différent_1 (s, m):
@@ -2106,9 +2266,27 @@ def c_conf_eh_bien_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_eh_ben_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(1).startswith("B")
 def c_conf_faux_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ">(?:il|ne|en|y|leur|lui|nous|vous|[mtsl]e|la|les) ", False, True) and morphex(dDA, nextword1(s, m.end()), ":",  ":(?:Y|Oo|X|M)", True)
+    return not morph(dDA, prevword1(s, m.start()), ">(?:ils?|ne|en|y|leur|lui|nous|vous|[mtsl]e|la|les) ", False, True) and morphex(dDA, nextword1(s, m.end()), ":",  ":(?:Y|Oo|X|M)", True)
+def s_conf_flan_1 (s, m):
+    return m.group(1).replace("c", "").replace("C", "")
+def s_conf_flanc_1 (s, m):
+    return m.group(0).replace("an", "anc").replace("AN", "ANC")
+def c_conf_sur_le_flanc_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:attaquer|allonger|blesser|coucher|étendre|toucher) ", False)
+def s_conf_sur_le_flanc_1 (s, m):
+    return m.group(0).replace("an", "anc").replace("AN", "ANC")
+def c_conf_tirer_au_flanc_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">tir(?:er|) ", False)
+def s_conf_tirer_au_flanc_1 (s, m):
+    return m.group(0).replace("an", "anc").replace("AN", "ANC")
 def c_conf_la_là_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":E|>le ", False, False)
+def c_conf_les1_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":N.*:m:[pi]")
+def c_conf_les2_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[m.end():], "^ *$|^,") or morph(dDA, prevword1(s, m.start()), ":D.*:p")
+def c_conf_les2_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
 def c_conf_leurs_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:G|N|A|M[12P])") and not look(s[:m.start()], r"(?i)\b[ld]es +$")
 def c_conf_loin_s_en_faut_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2142,7 +2320,7 @@ def c_conf_prêt_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_près_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":(?:Y|M[12P])|>(?:en|y|les?) ", False)
 def c_conf_quant_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ">(?:arriver|venir|à|revenir|partir|aller) ")
+    return not morph(dDA, prevword1(s, m.start()), ">(?:arriver|venir|à|revenir|partir|aller) ") and not(m.group(0).endswith("à") and look(s[m.end():], "^ +[mts]on tour[, ]"))
 def c_conf_qu_en2_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":P", False)
 def c_conf_quand2_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2153,6 +2331,18 @@ def c_conf_quelle_nom_adj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ]", ":(?:G|[123][sp]|W)")
 def s_conf_quelle_nom_adj_1 (s, m):
     return m.group(1).replace(" ", "")
+def c_conf_qu_elle_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2).islower() and (morphex(dDA, (m.start(2), m.group(2)), ":V|>(?:ne?|me?|te?|se?|[nv]ous|l(?:e|a|es|ui|leur|)|en|y) ", ":[NA].*:[fe]|>(?:plus|moins)") or m.group(2) == "t" or m.group(2) == "s") and not (m.group(2) == "en" and morph(dDA, nextword1(s, m.end()), ":V0e", False))
+def c_conf_qu_elle_verbe_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).endswith("e") and not morph(dDA, (m.start(2), m.group(2)), ":V0e", False)
+def c_conf_qu_elle_verbe_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and m.group(1).endswith("s") and not morph(dDA, (m.start(2), m.group(2)), ":V0e", False)
+def c_conf_qu_elle_verbe_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":V0e", False) and morphex(dDA, nextword1(s, m.end()), ":[QA]", ":G", False)
+def c_conf_qu_elle_verbe_5 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).endswith("e")
+def c_conf_qu_elle_verbe_6 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and m.group(1).endswith("s")
 def c_être_pas_sans_savoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":V0e", False)
 def c_conf_il_on_s_en_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2170,45 +2360,45 @@ def c_conf_en_temps_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conf_ouvrir_la_voix_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">ouvrir ", False)
 def c_conf_voir_voire_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not re.search("^(?:grand|petit|rouge)$", m.group(2)) and morphex(dDA, (m.start(2), m.group(2)), ":A", ":[NGM]") and not m.group(2).istitle() and not look(s[:m.start()], r"(?i)\bne (?:pas |jamais |) *$") and not morph(dDA, prevword1(s, m.start()), ":O[os]|>(?:ne|falloir|pouvoir|savoir|de) ", False)
+    return not re.search("^(?:grand|petit|rouge)$", m.group(2)) and morphex(dDA, (m.start(2), m.group(2)), ":A", ":[NGM]") and not m.group(2).istitle() and not look(s[:m.start()], r"(?i)\b[ndmts](?:e |’(?:en |y ))(?:pas |jamais |) *$") and not morph(dDA, prevword1(s, m.start()), ":O[os]|>(?:[ndmts]e|falloir|pouvoir|savoir|de) ", False)
 def c_conf_voire_voir_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, prevword1(s, m.start()), ":Cs|>(?:ni|et|sans|pour|falloir|[pv]ouvoir|aller) ", True, False)
 def c_conf_j_y_en_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|O[onw])")
 def s_conf_j_y_en_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":1s")
+    return suggSimil(m.group(2), ":1s", False)
 def c_conf_ne_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|O[onw]|X)|>(?:[lmtsn]|surtout|guère|presque|même|tout|parfois|vraiment|réellement) ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
+    return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|O[onw]|X)|>(?:[lmtsn]|surtout|guère|presque|même|tout|parfois|vraiment|réellement|justement) ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_ne_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Oo|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Oo|Y)", False)
 def c_conf_n_y_en_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|O[onw]|X)") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_n_y_en_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Y)", False)
 def c_conf_ne_pronom_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|O[onw]|X)") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_ne_pronom_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Y)", False)
 def c_conf_me_te_se_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("(?i)^se que?", m.group(0)) and morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|Oo)|>[lmts] ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_me_te_se_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Oo|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Oo|Y)", False)
 def c_conf_m_t_s_y_en_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|Oo)") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
+    return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P|X|Oo)|rien ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_m_t_s_y_en_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Y)", False)
 def c_conf_m_s_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P)|>(?:en|y|ils?) ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_m_s_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Y)", False)
 def c_conf_t_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":", ":(?:[123][sp]|Y|P)|>(?:en|y|ils?|elles?) ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|ce)$", m.group(2))
 def s_conf_t_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":(?:[123][sp]|Y)")
+    return suggSimil(m.group(2), ":(?:[123][sp]|Y)", False)
 def c_conf_c_ç_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":", ":[123][sp]|>(?:en|y|que?) ") and not re.search("(?i)-(?:ils?|elles?|[nv]ous|je|tu|on|dire)$", m.group(2))
 def s_conf_c_ç_qqch_1 (s, m):
-    return suggSimil(m.group(2), ":3s")
+    return suggSimil(m.group(2), ":3s", False)
 def c_conj_xxxai_sans_sujet_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return ( morph(dDA, (m.start(0), m.group(0)), ":1s") or ( look(s[:m.start()], "> +$") and morph(dDA, (m.start(0), m.group(0)), ":1s", False) ) ) and not (m.group(0)[0:1].isupper() and look(sx[:m.start()], r"\w")) and not look(s[:m.start()], r"(?i)\b(?:j(?:e |[’'])|moi(?:,? qui| seul) )")
 def s_conj_xxxai_sans_sujet_1 (s, m):
@@ -2234,11 +2424,11 @@ def c_conj_équivaux_prévaux_sans_sujet_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_conj_équivaux_prévaux_sans_sujet_1 (s, m):
     return suggVerb(m.group(0), ":3s")
 def c_conj_xxxons_sans_sujet_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(0), m.group(0)), ":V.*:1p", ":[EGMNAJ]") and not (m.group(0)[0:1].isupper() and look(s[:m.start()], r"\w")) and not look(sx[:m.start()], r"\b(?:[nN]ous(?:-mêmes?|)|[eE]t moi(?:-même|)|[nN]i (?:moi|nous)),? ")
+    return morphex(dDA, (m.start(0), m.group(0)), ":V.*:1p", ":[EGMNAJ]") and not (m.group(0)[0:1].isupper() and look(s[:m.start()], r"\w")) and not look(sx[:m.start()], r"\b(?:[nN]ous(?:-mêmes?|)|(?:[eE]t|[oO]u) moi(?:-même|)|[nN]i (?:moi|nous)),? ")
 def s_conj_xxxons_sans_sujet_1 (s, m):
     return suggVerb(m.group(0), ":3p")
 def c_conj_xxxez_sans_sujet_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(0), m.group(0)), ":V.*:2p", ":[EGMNAJ]") and not (m.group(0)[0:1].isupper() and look(s[:m.start()], r"\w")) and not look(sx[:m.start()], r"\b(?:[vV]ous(?:-mêmes?|)|[eE]t toi(?:-même|)|[tT]oi(?:-même|) et|[nN]i (?:vous|toi)),? ")
+    return morphex(dDA, (m.start(0), m.group(0)), ":V.*:2p", ":[EGMNAJ]") and not (m.group(0)[0:1].isupper() and look(s[:m.start()], r"\w")) and not look(sx[:m.start()], r"\b(?:[vV]ous(?:-mêmes?|)|(?:[eE]t|[oO]u) toi(?:-même|)|[tT]oi(?:-même|) et|[nN]i (?:vous|toi)),? ")
 def c_p_tout_débuts_petits_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], r"\b(aux|[ldmtsc]es|[nv]os|leurs) +$")
 def c_p_les_tout_xxx_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2288,19 +2478,27 @@ def c_ne_manquant3_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_ne_manquant4_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[123][sp]", False) and not (re.search("(?i)^(?:jamais|rien)$", m.group(3)) and look(s[:m.start()], r"\b(?:que?|plus|moins) "))
 def c_infi_ne_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, (m.start(1), m.group(1)), ":(?:Y|W|O[ow])|>que? ", False) and _oDict.isValid(m.group(1))
+    return not morph(dDA, (m.start(1), m.group(1)), ":(?:Y|W|O[ow])|>que? ", False) and _oSpellChecker.isValid(m.group(1))
 def s_infi_ne_1 (s, m):
     return suggVerbInfi(m.group(1))
+def c_imp_infinitif_erroné_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":V1.*:Y", False) and look(s[:m.start()], "^ *$|, *$")
+def s_imp_infinitif_erroné_1 (s, m):
+    return suggVerbTense(m.group(1), ":E", ":2p")
 def c_p_en_année_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, nextword1(s, m.end()), ":[AN].*:[pi]", False, False)
 def c_p_de_année_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":A.*:s", False)
 def c_p_un_nombre_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":A.*:s")
+def c_loc_côte_à_côte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not re.search("(?i)^côte à côte$", m.group(0))
 def c_p_grand_bien_lui_fasse_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], "^ *$|, *$")
 def p_p_le_pour_et_le_contre_1 (s, m):
     return m.group(0).replace(" ", "_")
+def c_loc_tour_à_tour_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not re.search("(?i)^tour à tour$", m.group(0))
 def c_p_qqch_tiret_là_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":G")
 def c_p_tout_au_long_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2309,30 +2507,70 @@ def c_p_suite_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], r"(?i)\b(?:une|la|cette|[mts]a|[nv]otre|de) +")
 def c_p_dét_plur_nombre_nom_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NA].*:[pi]", ":(?:V0|3p)|>(?:janvier|février|mars|avril|mai|juin|juillet|ao[ûu]t|septembre|octobre|novembre|décembre|vendémiaire|brumaire|frimaire|nivôse|pluviôse|ventôse|germinal|floréal|prairial|messidor|thermidor|fructidor)")
-def c_p_faire_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">faire ", False)
-def c_p_faire_qqch_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo
+def c_loc_arc_à_poulies_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_armes_à_feu_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_bombe_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_canne_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).find("ane") != -1
+def s_loc_canne_à_1 (s, m):
+    return m.group(1).replace("ane", "anne")
+def c_loc_canne_à_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(3) == "a"
+def c_loc_caisse_à_outils_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_chair_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_crayon_à_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_cuillère_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_fard_à_paupières_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_fils_fille_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_gaz_à_effet_de_serre_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_lime_à_ongles_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_machine_à_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
 def c_p_mineur_de_moins_de_x_ans_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(2).isdigit() or morph(dDA, (m.start(2), m.group(2)), ":B", False)
-def c_p_mettre_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">mettre ", False)
+def c_loc_moule_à_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
 def c_p_numéro_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], r"\b[lL]a +$")
 def d_p_numéro_1 (s, m, dDA):
     return define(dDA, m.start(0), [">numéro :N:f:s"])
-def c_p_prendre_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">prendre ", False)
-def c_p_rester_lettre_morte_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">rester ", False)
-def c_p_sembler_paraitre_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:sembler|para[îi]tre) ") and morphex(dDA, (m.start(3), m.group(3)), ":A", ":G")
-def c_p_tenir_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">tenir ", False)
-def c_p_trier_sur_le_volet_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">trier ", False)
-def c_p_venir_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">venir ", False)
+def c_p_papier_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_remire_à_plat_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_rouge_à_lèvres_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_sac_à_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_silo_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_soue_à_cochons_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_p_trou_à_rat_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_tueur_à_gages_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_vente_à_domicile_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_vernis_à_ongles_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_vol_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
+def c_loc_voie_de_recours_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).endswith("x")
+def c_loc_usine_à_gaz_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "a"
 def c_p_qqch_100_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", ":(?:G|3p)")
 def c_p_det_plur_nombre_nom_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2352,7 +2590,7 @@ def c_p_nombre_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_à_xxx_reprises_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":B", False) or re.search("(?i)^(?:plusieurs|maintes)", m.group(1))
 def c_p_bien_entendu_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, nextword1(s, m.end()), ":[NAQR]", False, True)
+    return morph(dDA, nextword1(s, m.end()), ":[NAQR]|>que? ", False, True)
 def c_p_comme_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":V0")
 def c_p_pêle_mêle_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2367,6 +2605,10 @@ def c_p_verbe_pronom_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">(?:croire|devoir|estimer|imaginer|penser) ")
 def c_p_en_partie_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":(?:R|D|[123]s|X)", False)
+def c_p_en_plus_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, nextword1(s, m.end()), ":A", False, True)
+def c_p_en_plus_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
 def c_p_en_quelques_tps1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":[AQ]:[ef]:[si]", False)
 def c_p_en_quelques_tps2_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2391,6 +2633,8 @@ def c_p_plus_adv_les_uns_que_les_autres_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":[AW]", False)
 def c_p_pour_autant_que_su_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":Y", False)
+def c_p_tambour_battant_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, prevword1(s, m.start()), ":(?:V|N:f)", ":G")
 def c_p_tête_baissée_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NV]", ":D")
 def c_p_tant_que_ça_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2404,7 +2648,7 @@ def c_p_nom_propre_nom_propre_2 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_de_nom_propre_et_ou_de_nom_propre_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":M", False) and morph(dDA, (m.start(2), m.group(2)), ":M", False)
 def c_p_de_nom_propre_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":M", False) or not _oDict.isValid(m.group(1))
+    return morph(dDA, (m.start(1), m.group(1)), ":M", False) or not _oSpellChecker.isValid(m.group(1))
 def c_p_entre_nom_propre_et_nom_propre_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":(?:M[12]|N)") and morph(dDA, (m.start(2), m.group(2)), ":(?:M[12]|N)")
 def c_p_en_nom_propre_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2432,7 +2676,7 @@ def c_p_avoir_loc_adv_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_avoir_pronom_loc_adv_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":V0a", False)
 def c_p_avoir_tous_toutes_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":V0a", False) and morph(dDA, (m.start(3), m.group(3)), ":B", False) and morph(dDA, (m.start(4), m.group(4)), ":(?:Q|V1.*:Y)", False)
+    return morph(dDA, (m.start(1), m.group(1)), ":V0a", False) and morph(dDA, (m.start(3), m.group(3)), ":B", False) and morph(dDA, (m.start(4), m.group(4)), ">besoin |:(?:Q|V1.*:Y)", False)
 def c_p_elle_aussi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":A:[fe]:s", False)
 def c_p_elle_aussi_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2456,13 +2700,15 @@ def c_p_le_xxx_le_plus_adj_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_la_xxx_la_plus_adj_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":G") and morph(dDA, (m.start(3), m.group(3)), ":[AQ].*:[fe]", False)
 def c_p_les_xxx_les_plus_adj_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]", ":[123][sp]") and morph(dDA, (m.start(3), m.group(3)), ":[AQ].*:[pi]", False)
+    return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]", ":[123][sp]") and morph(dDA, (m.start(3), m.group(3)), ":A.*:[pi]", False)
+def c_p_le_plus_le_moins_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":A", ":([me]:[si]|G)") and morph(dDA, prevword1(s, m.start()), ">(?:avoir|être) :V", False)
 def c_p_bien_mal_fort_adj_adv_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[AW]")
 def c_p_loc_adj_adv_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[AW]", False)
 def c_p_un_brin_chouïa_rien_tantinet_soupçon_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[AQ]", False)
+    return morphex(dDA, (m.start(2), m.group(2)), ":A", ":G")
 def c_p_assez_trop_adv_xxxment_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":W", ":3p")
 def c_p_assez_trop_adj_adv_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2476,11 +2722,17 @@ def c_p_adverbe_xxxment_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_couleurs_invariables_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":[NAQ]", False)
 def c_p_locutions_adj_nom_et_couleurs_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":(?:N|A|Q|V0e)", False)
+    return morphex(dDA, (m.start(1), m.group(1)), ":(?:N|A|Q|V0e)", ":D")
 def c_p_jamais1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], r"(?i)\bne +$")
 def c_p_à_nos_yeux_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":A.*:[me]:[pi]", False)
+def c_p_à_la_dernière_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(2), m.group(2)), ":A.*:[fe]:[si]", False)
+def c_p_à_l_époque_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(2), m.group(2)), ":A.*:[fe]:[si]", False)
+def c_p_au_pire_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":A", ":N:[me]:[si]")
 def c_p_ben_voyons_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], "^ *$|, *$")
 def c_p_chaque_année_semaine_journée_décennie_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2509,18 +2761,80 @@ def c_p_quelques_instants_jours_siècles_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":A.*:[me]:[pi]", False)
 def c_p_un_moment_instant_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":A.*:[me]:[si]", False)
-def c_p_astuce_je_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ":1s", False, False)
-def c_p_astuce_tu_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ":2s", False, False)
-def c_p_astuce_il_elle_on_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ":3s", False, False)
-def c_p_astuce_nous_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ":1p", False, False)
-def c_p_astuce_vous_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ":2p", False, False)
-def c_p_astuce_ils_elles_le_la_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, prevword1(s, m.start()), ":3p", False, False)
+def c_loc_arriver_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">arriver ", False)
+def c_loc_arriver_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(3) == "a"
+def c_p_donner_sens_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:re|)donner ", False)
+def c_p_faire_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">faire ", False)
+def c_p_faire_qqch_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def c_loc_laisser_pour_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">laisser ", False)
+def c_loc_laisser_pour_compte_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "compte"
+def c_loc_mettre_à_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">mettre ", False)
+def c_loc_mettre_à_qqch_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(3) == "a"
+def c_p_mettre_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">mettre ", False)
+def c_loc_mourir_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">mourir ", False)
+def s_loc_mourir_qqch_1 (s, m):
+    return m.group(2).replace("û", "u")
+def c_p_paraitre_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">para[îi]tre ", False)
+def s_p_paraitre_qqch_1 (s, m):
+    return m.group(2).replace("û", "u")
+def c_p_porter_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">porter ", False)
+def c_loc_prendre_à_la_légère_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">prendre ", False)
+def c_loc_prendre_à_la_légère_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(3) == "a"
+def c_p_prendre_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">prendre ", False)
+def c_loc_rendre_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">rendre ", False)
+def c_loc_rester_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">rester ", False)
+def c_loc_rester_qqch_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ">jeûne ", False)
+def s_loc_rester_qqch_2 (s, m):
+    return m.group(2).replace("û", "u")
+def c_loc_rester_qqch_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def c_loc_semble_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">sembler ", False)
+def s_loc_semble_qqch_1 (s, m):
+    return m.group(2).replace("û", "u")
+def c_p_sembler_paraitre_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:sembler|para[îi]tre) ") and morphex(dDA, (m.start(3), m.group(3)), ":A", ":G")
+def c_loc_suivre_de_près_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">suivre ", False)
+def c_loc_suivre_de_près_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(3) != "près"
+def c_loc_tenir_à_distance_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">tenir ", False)
+def c_loc_tenir_à_distance_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(3) == "a"
+def c_loc_tenir_compte_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">tenir ", False)
+def c_loc_tenir_compte_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ">co[mn]te(?:sse|) ", False)
+def c_p_tirer_profit_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">tirer ", False)
+def c_loc_tourner_court_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">tourner ", False)
+def c_loc_tourner_court_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "court"
+def c_p_trier_sur_le_volet_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">trier ", False)
+def c_p_venir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">venir ", False)
 def c_redondances_phrase_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(1), m.group(1)), ":(?:G|V0)|>même ", False)
 def c_redondances_phrase_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2550,18 +2864,20 @@ def s_gn_le_accord1_3 (s, m):
 def c_gn_le_accord1_4 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo
 def c_gn_le_accord2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f", ":(?:e|m|P|G|W|[123][sp]|Y)") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f", ":[me]") and morphex(dDA, (m.start(1), m.group(1)), ":R", ">(?:e[tn]|ou) ") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
-def s_gn_le_accord2_1 (s, m):
-    return suggLesLa(m.group(3))
+    return morph(dDA, (m.start(2), m.group(2)), ":D", False)
 def c_gn_le_accord2_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and hasMasForm(m.group(3))
+    return morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f", ":(?:e|m|P|G|W|[123][sp]|Y)") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f", ":[me]") and morphex(dDA, (m.start(1), m.group(1)), ":R", ">(?:e[tn]|ou) ") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
 def s_gn_le_accord2_2 (s, m):
-    return suggMasSing(m.group(3), True)
+    return suggLesLa(m.group(3))
 def c_gn_le_accord2_3 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not bCondMemo and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[si]") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou)") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
+    return bCondMemo and hasMasForm(m.group(3))
 def s_gn_le_accord2_3 (s, m):
-    return suggMasSing(m.group(3))
+    return suggMasSing(m.group(3), True)
 def c_gn_le_accord2_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[si]") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou)") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
+def s_gn_le_accord2_4 (s, m):
+    return suggMasSing(m.group(3))
+def c_gn_le_accord2_5 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo
 def c_gn_le_accord3_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:e|m|P|G|W|Y)")
@@ -2588,7 +2904,7 @@ def c_gn_ledit_accord_3 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_ledit_accord_3 (s, m):
     return suggMasSing(m.group(2))
 def c_gn_un_accord_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:e|m|G|W|V0|3s)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:e|m|G|W|V0|3s|Y)")
 def c_gn_un_accord_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo and hasMasForm(m.group(2))
 def s_gn_un_accord_2 (s, m):
@@ -2638,16 +2954,18 @@ def c_gn_ce_accord_4 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_ce_accord_4 (s, m):
     return suggMasSing(m.group(2))
 def c_gn_mon_ton_son_accord_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ">[bcdfgjklmnpqrstvwxz].*:[NAQ].*:f", ":[GWme]")
-def s_gn_mon_ton_son_accord_1 (s, m):
-    return m.group(1).replace("on", "a")
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
 def c_gn_mon_ton_son_accord_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and hasMasForm(m.group(2))
+    return morphex(dDA, (m.start(2), m.group(2)), ">[bcdfgjklmnpqrstvwxz].*:[NAQ].*:f", ":[GWme]")
 def s_gn_mon_ton_son_accord_2 (s, m):
-    return suggMasSing(m.group(2), True)
+    return m.group(1).replace("on", "a")
 def c_gn_mon_ton_son_accord_3 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:p", ":[siGW]")
+    return bCondMemo and hasMasForm(m.group(2))
 def s_gn_mon_ton_son_accord_3 (s, m):
+    return suggMasSing(m.group(2), True)
+def c_gn_mon_ton_son_accord_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:p", ":[siGW]")
+def s_gn_mon_ton_son_accord_4 (s, m):
     return suggMasSing(m.group(2))
 def c_gn_au_accord_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f:s", ":[GWme]")
@@ -2672,14 +2990,16 @@ def c_gn_la_accord1_3 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_la_accord1_3 (s, m):
     return suggFemSing(m.group(2))
 def c_gn_la_accord2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m", ":(?:e|f|P|G|W|[1-3][sp]|Y)") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m", ":[fe]") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou) ") and not (morph(dDA, (m.start(1), m.group(1)), ":(?:Rv|C)", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
+    return morph(dDA, (m.start(2), m.group(2)), ":D", False)
 def c_gn_la_accord2_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and hasFemForm(m.group(3))
-def s_gn_la_accord2_2 (s, m):
-    return suggFemSing(m.group(3), True)
+    return morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m", ":(?:e|f|P|G|W|[1-3][sp]|Y)") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m", ":[fe]") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou) ") and not (morph(dDA, (m.start(1), m.group(1)), ":(?:Rv|C)", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
 def c_gn_la_accord2_3 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not bCondMemo and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[si]") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou)") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
+    return bCondMemo and hasFemForm(m.group(3))
 def s_gn_la_accord2_3 (s, m):
+    return suggFemSing(m.group(3), True)
+def c_gn_la_accord2_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p") or ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[si]") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou)") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)) )
+def s_gn_la_accord2_4 (s, m):
     return suggFemSing(m.group(3))
 def c_gn_la_accord3_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m", ":[efPGWY]")
@@ -2766,7 +3086,7 @@ def s_gn_certaines_accord_2 (s, m):
 def c_gn_certaines_accord_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s", ":[ipGWP]") and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False))) or m.group(2) in aREGULARPLURAL
 def s_gn_certaines_accord_3 (s, m):
-    return suggPlur(m.group(1))
+    return suggPlur(m.group(2))
 def c_gn_certaines_des_accord_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m", ":[efGW]")
 def c_gn_certaines_des_accord_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -2798,17 +3118,19 @@ def s_gn_notre_votre_chaque_accord_1 (s, m):
 def c_gn_quelque_accord_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:p", ":[siG]")
 def c_gn_les_accord1_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return ( morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:s") and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False)) ) or m.group(1) in aREGULARPLURAL
+    return ( morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s") and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False)) ) or m.group(2) in aREGULARPLURAL
 def s_gn_les_accord1_1 (s, m):
-    return suggPlur(m.group(1))
-def c_gn_les_accord2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return ( morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s") or (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s", ":[pi]|>avoir") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou) ") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(2), m.group(2)), ":Y", False))) ) and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False))
-def s_gn_les_accord2_1 (s, m):
     return suggPlur(m.group(2))
+def c_gn_les_accord2_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":D", False)
+def c_gn_les_accord2_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return ( morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:s") or (morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:s", ":[pi]|>avoir") and morphex(dDA, (m.start(1), m.group(1)), ":[RC]", ">(?:e[tn]|ou) ") and not (morph(dDA, (m.start(1), m.group(1)), ":Rv", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False))) ) and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False))
+def s_gn_les_accord2_2 (s, m):
+    return suggPlur(m.group(3))
 def c_gn_les_accord3_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return (morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:s", ":[ipYPGW]") and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False))) or m.group(1) in aREGULARPLURAL
+    return (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s", ":[ipYPGW]") and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False))) or m.group(2) in aREGULARPLURAL
 def s_gn_les_accord3_1 (s, m):
-    return suggPlur(m.group(1))
+    return suggPlur(m.group(2))
 def c_gn_leurs_accord_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s", ":(?:[ipGW]|[123][sp])") and not (look(s[m.end():], "^ +(?:et|ou) ") and morph(dDA, nextword(s, m.end(), 2), ":[NAQ]", True, False))) or m.group(2) in aREGULARPLURAL
 def s_gn_leurs_accord_1 (s, m):
@@ -3033,6 +3355,10 @@ def c_gn_2m_pfx_de_sur_avec_après_4 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo
 def s_gn_2m_pfx_de_sur_avec_après_4 (s, m):
     return switchPlural(m.group(1))
+def c_gn_de_manière_façon_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(2), m.group(2)), ":A.*:(m|f:p)", ":[GM]")
+def s_gn_de_manière_façon_1 (s, m):
+    return suggFemSing(m.group(2))
 def c_gn_2m_l_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not re.search("(?i)^air$", m.group(1)) and not m.group(2).startswith("seul") and ( (morph(dDA, (m.start(1), m.group(1)), ":m") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f")) or (morph(dDA, (m.start(1), m.group(1)), ":f") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m")) ) and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_l_1 (s, m):
@@ -3058,7 +3384,7 @@ def c_gn_2m_l_après_et_ou_de_3 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_2m_l_après_et_ou_de_3 (s, m):
     return suggSing(m.group(2))
 def c_gn_2m_un_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[me]", ":(?:B|G|V0|f)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[me]", ":(?:B|G|V0)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_un_1 (s, m):
     return suggMasSing(m.group(2), True)
 def c_gn_2m_un_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3074,7 +3400,7 @@ def c_gn_2m_un_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_2m_un_après_et_ou_de_2 (s, m):
     return suggMasSing(m.group(2))
 def c_gn_2m_une_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":(?:B|G|V0|m)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":(?:B|G|V0)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_une_1 (s, m):
     return suggFemSing(m.group(2), True)
 def c_gn_2m_une_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3089,8 +3415,28 @@ def c_gn_2m_une_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1) != "fois" and morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[si]", False) and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:p") and not m.group(2).startswith("seul") and not apposition(m.group(1), m.group(2)) and not morph(dDA, prevword1(s, m.start()), ":[NAQB]|>(?:et|ou) ", False, False)
 def s_gn_2m_une_après_et_ou_de_2 (s, m):
     return suggFemSing(m.group(2))
+def c_gn_2m_le_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_le_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[me]", ":(?:B|G|V0)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f") and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_le_2 (s, m):
+    return suggMasSing(m.group(3), True)
+def c_gn_2m_le_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_le_3 (s, m):
+    return suggMasSing(m.group(3))
+def c_gn_2m_le_après_et_ou_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_le_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[me]", ":(?:B|G|V0|f)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f") and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_le_après_et_ou_de_2 (s, m):
+    return suggMasSing(m.group(3), True)
+def c_gn_2m_le_après_et_ou_de_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_le_après_et_ou_de_3 (s, m):
+    return suggMasSing(m.group(3))
 def c_gn_2m_det_mas_sing_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[me]", ":(?:B|G|V0|f)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[me]", ":(?:B|G|V0)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_det_mas_sing_1 (s, m):
     return suggMasSing(m.group(2), True)
 def c_gn_2m_det_mas_sing_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3121,8 +3467,28 @@ def c_gn_2m_mon_ton_son_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(1), m.group(2)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
 def s_gn_2m_mon_ton_son_après_et_ou_de_2 (s, m):
     return suggMasSing(m.group(2))
+def c_gn_2m_la_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_la_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[fe]", ":(?:B|G|V0)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m") and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_la_2 (s, m):
+    return suggFemSing(m.group(3), True)
+def c_gn_2m_la_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_la_3 (s, m):
+    return suggFemSing(m.group(3))
+def c_gn_2m_la_après_et_ou_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_la_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[fe]", ":(?:B|G|V0|m)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m") and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_la_après_et_ou_de_2 (s, m):
+    return suggFemSing(m.group(3), True)
+def c_gn_2m_la_après_et_ou_de_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_la_après_et_ou_de_3 (s, m):
+    return suggFemSing(m.group(3))
 def c_gn_2m_det_fem_sing_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) != "fois" and not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":(?:B|G|V0|m)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+    return m.group(1) != "fois" and not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":(?:B|G|V0)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_det_fem_sing_1 (s, m):
     return suggFemSing(m.group(2), True)
 def c_gn_2m_det_fem_sing_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3137,6 +3503,34 @@ def c_gn_2m_det_fem_sing_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(1), m.group(2)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
 def s_gn_2m_det_fem_sing_après_et_ou_de_2 (s, m):
     return suggFemSing(m.group(2))
+def c_gn_2m_leur_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_leur_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and ((morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m", ":(?:B|e|G|V0|f)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f")) or (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:B|e|G|V0|m)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m"))) and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_leur_2 (s, m):
+    return switchGender(m.group(3), False)
+def c_gn_2m_leur_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and hasFemForm(m.group(2))
+def s_gn_2m_leur_3 (s, m):
+    return switchGender(m.group(1), False)
+def c_gn_2m_leur_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_leur_4 (s, m):
+    return suggSing(m.group(3))
+def c_gn_2m_leur_après_et_ou_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_leur_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and ((morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m", ":(?:B|e|G|V0|f)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f")) or (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:B|e|G|V0|m)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m"))) and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_leur_après_et_ou_de_2 (s, m):
+    return switchGender(m.group(3), False)
+def c_gn_2m_leur_après_et_ou_de_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and hasFemForm(m.group(2))
+def s_gn_2m_leur_après_et_ou_de_3 (s, m):
+    return switchGender(m.group(1), False)
+def c_gn_2m_leur_après_et_ou_de_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not m.group(3).startswith("seul") and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWsi]") and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_leur_après_et_ou_de_4 (s, m):
+    return suggSing(m.group(3))
 def c_gn_2m_det_epi_sing_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1) != "fois" and not m.group(2).startswith("seul") and not re.search("(?i)^quelque chose", m.group(0)) and ((morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:m", ":(?:B|e|G|V0|f)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f")) or (morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:f", ":(?:B|e|G|V0|m)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m"))) and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_det_epi_sing_1 (s, m):
@@ -3162,7 +3556,7 @@ def c_gn_2m_det_epi_sing_après_et_ou_de_3 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_2m_det_epi_sing_après_et_ou_de_3 (s, m):
     return suggSing(m.group(2))
 def c_gn_2m_det_mas_plur_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[me]", ":(?:B|G|V0|f)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+    return not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[me]", ":(?:B|G|V0)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_det_mas_plur_1 (s, m):
     return suggMasPlur(m.group(2), True)
 def c_gn_2m_det_mas_plur_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3178,7 +3572,7 @@ def c_gn_2m_det_mas_plur_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_2m_det_mas_plur_après_et_ou_de_2 (s, m):
     return suggMasPlur(m.group(2))
 def c_gn_2m_det_fem_plur_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) != "fois" and not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":(?:B|G|V0|m)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+    return m.group(1) != "fois" and not m.group(2).startswith("seul") and morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[fe]", ":(?:B|G|V0)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m") and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_det_fem_plur_1 (s, m):
     return suggFemPlur(m.group(2), True)
 def c_gn_2m_det_fem_plur_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3193,6 +3587,34 @@ def c_gn_2m_det_fem_plur_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(2).startswith("seul") and morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]", False) and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:s") and not apposition(m.group(1), m.group(2)) and not (look_chk1(dDA, s[m.end():], m.end(), r"^ +et +(\w[\w-]+)", ":A") or look_chk1(dDA, s[m.end():], m.end(), r"^ *, +(\w[\w-]+)", ":A.*:[si]")) and not ( look(s[:m.start()], r"(?i)\bune? de ") or (m.group(0).startswith("de") and look(s[:m.start()], r"(?i)\bune? +$")) )
 def s_gn_2m_det_fem_plur_après_et_ou_de_2 (s, m):
     return suggFemPlur(m.group(2))
+def c_gn_2m_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_les_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and ((morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m", ":(?:B|e|G|V0|f)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f")) or (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:B|e|G|V0|m)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m"))) and not apposition(m.group(2), m.group(3)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
+def s_gn_2m_les_2 (s, m):
+    return switchGender(m.group(3), True)
+def c_gn_2m_les_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and hasFemForm(m.group(2))
+def s_gn_2m_les_3 (s, m):
+    return switchGender(m.group(1), True)
+def c_gn_2m_les_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:s") and not apposition(m.group(2), m.group(3)) and not (look_chk1(dDA, s[m.end():], m.end(), r"^ +et +(\w[\w-]+)", ":A") or look_chk1(dDA, s[m.end():], m.end(), r"^ *, +(\w[\w-]+)", ":A.*:[si]")) and not look(s[:m.start()], r"(?i)\bune? de ")
+def s_gn_2m_les_4 (s, m):
+    return suggPlur(m.group(3))
+def c_gn_2m_les_après_et_ou_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False)
+def c_gn_2m_les_après_et_ou_de_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and ((morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m", ":(?:B|e|G|V0|f)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:f")) or (morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f", ":(?:B|e|G|V0|m)") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:m"))) and not apposition(m.group(2), m.group(3)) and not morph(dDA, prevword1(s, m.start()), ":[NAQ]|>(?:et|ou) ", False, False)
+def s_gn_2m_les_après_et_ou_de_2 (s, m):
+    return switchGender(m.group(3), True)
+def c_gn_2m_les_après_et_ou_de_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and hasFemForm(m.group(2))
+def s_gn_2m_les_après_et_ou_de_3 (s, m):
+    return switchGender(m.group(1), True)
+def c_gn_2m_les_après_et_ou_de_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) != "fois" and not m.group(3).startswith("seul") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:s") and not apposition(m.group(2), m.group(3)) and not (look_chk1(dDA, s[m.end():], m.end(), r"^ +et +(\w[\w-]+)", ":A") or look_chk1(dDA, s[m.end():], m.end(), r"^ *, +(\w[\w-]+)", ":A.*:[si]")) and not ( look(s[:m.start()], r"(?i)\bune? de ") or (m.group(0).startswith("de") and look(s[:m.start()], r"(?i)\bune? +$")) )
+def s_gn_2m_les_après_et_ou_de_4 (s, m):
+    return suggPlur(m.group(3))
 def c_gn_2m_det_epi_plur_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1) != "fois" and not m.group(2).startswith("seul") and ((morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:m", ":(?:B|e|G|V0|f)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:f")) or (morphex(dDA, (m.start(1), m.group(1)), ":[NAQ].*:f", ":(?:B|e|G|V0|m)") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:m"))) and not apposition(m.group(1), m.group(2)) and not look(s[:m.start()], r"\b(?:et|ou|de) +$")
 def s_gn_2m_det_epi_plur_1 (s, m):
@@ -3238,9 +3660,13 @@ def c_gn_3m_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_gn_3m_1 (s, m):
     return switchPlural(m.group(3))
 def c_gn_3m_les_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]") and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:s")
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False) and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]") and morph(dDA, (m.start(3), m.group(3)), ":[NAQ].*:[pi]") and morph(dDA, (m.start(4), m.group(4)), ":[NAQ].*:s")
 def s_gn_3m_les_1 (s, m):
-    return suggPlur(m.group(3))
+    return suggPlur(m.group(4))
+def c_gn_3m_le_la_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":D", False) and morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", False) and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:[si]", ":G") and morph(dDA, (m.start(4), m.group(4)), ":[NAQ].*:p")
+def s_gn_3m_le_la_1 (s, m):
+    return suggSing(m.group(4))
 def c_gn_3m_det_sing_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", False) and morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:[si]", ":G") and morph(dDA, (m.start(4), m.group(4)), ":[NAQ].*:p")
 def s_gn_3m_det_sing_1 (s, m):
@@ -3299,6 +3725,8 @@ def s_sgpl_confluence_de_1 (s, m):
     return suggPlur(m.group(1))
 def s_sgpl_troupeau_de_1 (s, m):
     return suggPlur(m.group(1))
+def s_sgpl_x_fois_par_période_1 (s, m):
+    return suggSing(m.group(1))
 def c_sgpl_à_nu_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">(?:mettre|mise) ", False)
 def c_sgpl_faire_affaire_avec_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3313,6 +3741,8 @@ def c_sgpl_coûter_cher_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">(?:co[ûu]ter|payer) ", False)
 def c_sgpl_donner_lieu_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">donner ", False)
+def c_sgpl_ensemble_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:[123]p|>(?:tou(?:te|)s|pas|rien|guère|jamais|toujours|souvent) ", ":[DRB]")
 def c_sgpl_avoir_pied_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">(?:avoir|perdre) ", False)
 def c_sgpl_à_pied_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3329,10 +3759,10 @@ def c_sgpl_vite_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":V0e.*:3p", False, False) or morph(dDA, nextword1(s, m.end()), ":Q", False, False)
 def c_conf_suite_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":D|>[ld] ", False) and look(s[:m.start()], "^ *$|, *$")
+def c_conf_pronom_à_l_air_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(2), m.group(2)), ":[AR]", ">libre ") and morph(dDA, prevword1(s, m.start()), ":Cs", False, True)
 def c_conf_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], r"(?i)\b(?:il |elle |n’) *$")
-def c_conf_abusif_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return look(s[m.end():], "^ *$|^,")
 def s_conf_acre_1 (s, m):
     return m.group(1).replace("â", "a").replace("Â", "A")
 def c_conf_âcre_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3357,6 +3787,12 @@ def s_conf_hospice2_1 (s, m):
     return m.group(1).replace("auspice", "hospice")
 def s_conf_hospice3_1 (s, m):
     return m.group(1).replace("auspice", "hospice").replace("Auspice", "Hospice")
+def s_conf_arrière_ban_1 (s, m):
+    return m.group(0).replace("c", "").replace("C", "")
+def c_conf_mettre_au_ban_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">mettre ", False) and not look(s[m.end():], "^ +des accusés")
+def c_conf_publier_les_bans_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">publi(?:er|cation) ", False)
 def c_conf_bel_et_bien_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, nextword1(s, m.end()), ":[AQ]")
 def s_conf_bitte_1 (s, m):
@@ -3420,11 +3856,13 @@ def c_conf_deceler_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_conf_deceler_qqch_1 (s, m):
     return m.group(1).replace("escell", "écel").replace("essell", "écel")
 def c_conf_en_train_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, prevword1(s, m.start()), ":V0e", False, False)
+    return morph(dDA, prevword1(s, m.start()), ">(?:être|voyager|surprendre|venir|arriver|partir|aller) ", False, False) or look(s[:m.start()], "-(?:ils?|elles?|on|je|tu|nous|vous) +$")
+def c_conf_entrain_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, prevword1(s, m.start()), ">(?:avec|sans|quel(?:le|)|cet|votre|notre|mon|leur) ", False, False) or look(s[:m.start()], " [dlDL]’$")
 def c_conf_à_l_envi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ">(?:abandonner|céder|résister) ", False) and not look(s[m.end():], "^ d(?:e |’)")
 def c_conf_est_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[QA]", False)
+    return morphex(dDA, (m.start(2), m.group(2)), ":[QA]", ":M") and m.group(2).islower()
 def c_conf_est_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return look_chk1(dDA, s[:m.start()], 0, r"(?i)^ *(?:l[ea]|ce(?:tte|t|)|mon|[nv]otre) +(\w[\w-]+\w) +$", ":[NA].*:[is]", ":G")
 def c_conf_est_3 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3446,11 +3884,15 @@ def s_conf_flamant_rose_1 (s, m):
 def c_conf_bonne_mauvaise_foi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not ( m.group(1) == "bonne" and look(s[:m.start()], r"(?i)\bune +$") and look(s[m.end():], "(?i)^ +pour toute") )
 def c_conf_faire_perdre_donner_foi_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:faire|perdre|donner) ", False)
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:faire|perdre|donner|avoir) ", False)
 def c_conf_glacière_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":D", False)
 def s_conf_goutte_1 (s, m):
     return m.group(1).replace("û", "u").replace("t", "tt")
+def s_conf_jeûne_1 (s, m):
+    return m.group(1).replace("u", "û")
+def s_conf_jeune_1 (s, m):
+    return m.group(1).replace("û", "u")
 def s_conf_celui_celle_là_1 (s, m):
     return m.group(0)[:-1].replace(" ", "-")+"à"
 def c_conf_verbe_impératif_la_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3527,12 +3969,22 @@ def c_conf_faire_partie_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">faire ", False)
 def c_conf_prendre_à_partie_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">prendre ", False)
+def c_conf_pâtes_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return re.search("(?i)^pattes?", m.group(1))
+def s_conf_pâtes_1 (s, m):
+    return m.group(1).replace("att", "ât")
+def c_conf_pâtes_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2).startswith("d’amende")
+def c_conf_pâtes_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2).startswith("a ")
+def s_conf_pâtes_3 (s, m):
+    return m.group(2).replace("a ", "à ")
 def c_conf_peu_de_qqch_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ]")
 def c_conf_peut_être_adverbe1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":(?:N|A|Q|G|MP)")
 def c_conf_diagnostic_pronostique_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return ( m.group(0).endswith("s") and look(s[:m.start()], r"(?i)\b(?:[mtscd]es|[nv]os|leurs|quels) $") ) or ( m.group(0).endswith("e") and look(s[:m.start()], r"(?i)\b(?:mon|ce|quel|un|du) $") )
+    return ( m.group(0).endswith("s") and look(s[:m.start()], r"(?i)\b(?:[mtscd]es|[nv]os|leurs|quels) $") ) or ( m.group(0).endswith("e") and look(s[:m.start()], r"(?i)\b(?:mon|ce|quel|un|du|[nv]otre) $") )
 def s_conf_diagnostic_pronostique_1 (s, m):
     return m.group(0).replace("que", "c")
 def c_conf_pu_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3608,9 +4060,9 @@ def s_conf_ver_de_terre_1 (s, m):
 def c_conf_vieil_euphonie_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[me]:s")
 def c_mc_mot_composé_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not m.group(1).isdigit() and not m.group(2).isdigit() and not morph(dDA, (m.start(0), m.group(0)), ":", False) and not morph(dDA, (m.start(2), m.group(2)), ":G", False) and _oDict.isValid(m.group(1)+m.group(2))
+    return not m.group(1).isdigit() and not m.group(2).isdigit() and not morph(dDA, (m.start(0), m.group(0)), ":", False) and not morph(dDA, (m.start(2), m.group(2)), ":G", False) and _oSpellChecker.isValid(m.group(1)+m.group(2))
 def c_mc_mot_composé_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(2) != "là" and not re.search("(?i)^(?:ex|mi|quasi|semi|non|demi|pro|anti|multi|pseudo|proto|extra)$", m.group(1)) and not m.group(1).isdigit() and not m.group(2).isdigit() and not morph(dDA, (m.start(2), m.group(2)), ":G", False) and not morph(dDA, (m.start(0), m.group(0)), ":", False) and not _oDict.isValid(m.group(1)+m.group(2))
+    return m.group(2) != "là" and not re.search("(?i)^(?:ex|mi|quasi|semi|non|demi|pro|anti|multi|pseudo|proto|extra)$", m.group(1)) and not m.group(1).isdigit() and not m.group(2).isdigit() and not morph(dDA, (m.start(2), m.group(2)), ":G", False) and not morph(dDA, (m.start(0), m.group(0)), ":", False) and not _oSpellChecker.isValid(m.group(1)+m.group(2))
 def c_maj_jours_semaine_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], r"[\w,] +$")
 def s_maj_jours_semaine_1 (s, m):
@@ -3628,7 +4080,7 @@ def c_maj_gentilés_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_maj_gentilés_1 (s, m):
     return m.group(2).lower()
 def c_maj_gentilés_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(2).islower() and not m.group(2).startswith("canadienne") and ( re.search("(?i)^(?:certaine?s?|cette|ce[ts]?|[dl]es|[nv]os|quelques|plusieurs|chaque|une|aux)$", m.group(1)) or ( re.search("(?i)^un$", m.group(1)) and not look(s[m.end():], "(?:approximatif|correct|courant|parfait|facile|aisé|impeccable|incompréhensible)") ) )
+    return m.group(2).islower() and not m.group(2).startswith("canadienne") and ( re.search("(?i)^(?:certaine?s?|cette|ce[ts]?|[dl]es|[nv]os|quelques|plusieurs|chaque|une|aux)$", m.group(1)) or ( re.search("(?i)^un$", m.group(1)) and not look(s[m.end():], "(?:approximatif|correct|courant|parfait|facile|aisé|impeccable|incompréhensible)") and not look(s[:m.start()], r"(?i)\bdans +")) )
 def s_maj_gentilés_2 (s, m):
     return m.group(2).capitalize()
 def s_maj_gentilés2_1 (s, m):
@@ -3724,7 +4176,7 @@ def c_p_que_semble_le_penser_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_en_plein_xxx_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":[NAQ]", False) and isEndOfNG(dDA, s[m.end():], m.end())
 def c_p_de_vinfi_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":V[123]_i", False) and isNextNotCOD(dDA, s[m.end():], m.end())
+    return morphex(dDA, (m.start(1), m.group(1)), ":V[123]_i", ">(?:devenir|rester|demeurer) ") and isNextNotCOD(dDA, s[m.end():], m.end())
 def c_p_de_manière_façon_xxx_et_xxx_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":A", False) and morphex(dDA, (m.start(2), m.group(2)), ":A", ":[GM]")
 def c_p_de_manière_façon_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3740,9 +4192,9 @@ def c_p_y_compris_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_p_préposition_nom_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":[GY]") and isEndOfNG(dDA, s[m.end():], m.end())
 def c_p_préposition_déterminant_nom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":[NAQ]", False) and isEndOfNG(dDA, s[m.end():], m.end())
+    return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":G") and isEndOfNG(dDA, s[m.end():], m.end())
 def c_p_lors_de_du_nom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":[NAQ]", False) and isEndOfNG(dDA, s[m.end():], m.end())
+    return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":G") and isEndOfNG(dDA, s[m.end():], m.end())
 def c_p_nul_doute_que_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], "^ *$|, *$")
 def c_p_douter_que_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3825,6 +4277,24 @@ def c_infi_lui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":Q", False)
 def s_infi_lui_1 (s, m):
     return suggVerbInfi(m.group(1))
+def c_conj_se_conf_être_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ">avoir ", False)
+def c_conj_se_conf_être_avoir_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":3p", False)
+def c_conj_se_conf_être_avoir_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def c_conj_je_me_conf_être_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">avoir ", False)
+def c_conj_tu_te_conf_être_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ">avoir ", False) and not morph(dDA, prevword1(s, m.start()), ":V0", False, False)
+def c_conj_nous_nous_conf_être_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ">avoir ", False) and look(s[:m.start()], "^ *$|, *$")
+def c_conj_nous_nous_conf_être_avoir_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def c_conj_vous_vous_conf_être_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ">avoir ", False) and look(s[:m.start()], "^ *$|, *$")
+def c_conj_vous_vous_conf_être_avoir_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_ppas_je_me_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:p", ":(?:G|Q.*:[si])") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not look(s[:m.start()], r"\b[qQ]ue? +$")) )
 def s_ppas_je_me_être_verbe_1 (s, m):
@@ -3834,23 +4304,23 @@ def c_ppas_tu_te_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_ppas_tu_te_être_verbe_1 (s, m):
     return suggVerbPpas(m.group(1), ":m:s")
 def c_ppas_il_se_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:f|m:p)", ":(?:G|Q.*:m:[si])") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not look(s[:m.start()], r"\b[qQ]ue? +$")) )
+    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:f|m:p)", ":(?:G|Q.*:m:[si])|>dire ") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not look(s[:m.start()], r"\b[qQ]ue? +$")) )
 def s_ppas_il_se_être_verbe_1 (s, m):
     return suggVerbPpas(m.group(1), ":m:s")
 def c_ppas_elle_se_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:m|f:p)", ":(?:G|Q.*:f:[si])") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not morph(dDA, prevword1(s, m.start()), ":R|>que ", False, False)) )
+    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:m|f:p)", ":(?:G|Q.*:f:[si])|>dire ") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not morph(dDA, prevword1(s, m.start()), ":R|>que ", False, False)) )
 def s_ppas_elle_se_être_verbe_1 (s, m):
     return suggVerbPpas(m.group(1), ":f:s")
 def c_ppas_nous_nous_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:s", ":(?:G|Q.*:[pi])") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not morph(dDA, prevword1(s, m.start()), ":R|>que ", False, False)) )
+    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:s", ":(?:G|Q.*:[pi])|>dire ") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not morph(dDA, prevword1(s, m.start()), ":R|>que ", False, False)) )
 def s_ppas_nous_nous_être_verbe_1 (s, m):
     return suggVerbPpas(m.group(1), ":p")
 def c_ppas_ils_se_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:f|m:s)", ":(?:G|Q.*:m:[pi])") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not look(s[:m.start()], r"\b[qQ]ue? +$")) )
+    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:f|m:s)", ":(?:G|Q.*:m:[pi])|>dire ") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not look(s[:m.start()], r"\b[qQ]ue? +$")) )
 def s_ppas_ils_se_être_verbe_1 (s, m):
     return suggVerbPpas(m.group(1), ":m:p")
 def c_ppas_elles_se_être_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:m|f:s)", ":(?:G|Q.*:f:[pi])") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not morph(dDA, prevword1(s, m.start()), ":R|>que ", False, False)) )
+    return morphex(dDA, (m.start(1), m.group(1)), ":Q.*:(?:m|f:s)", ":(?:G|Q.*:f:[pi])|>dire ") and ( morph(dDA, (m.start(1), m.group(1)), ":V[123]_.__p_e_") or (look(s[m.end():], "^ *$") and not morph(dDA, prevword1(s, m.start()), ":R|>que ", False, False)) )
 def s_ppas_elles_se_être_verbe_1 (s, m):
     return suggVerbPpas(m.group(1), ":f:p")
 def c_ppas_se_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -3892,8 +4362,12 @@ def c_ppas_ç_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_ppas_ç_être_1 (s, m):
     return suggMasSing(m.group(1))
 def c_ppas_ça_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return (morph(dDA, (m.start(2), m.group(2)), ">(?:être|sembler|devenir|re(?:ster|devenir)|para[îi]tre) ", False) or m.group(2).endswith(" été")) and ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWYsi]") or ( morphex(dDA, (m.start(3), m.group(3)), ":[AQ].*:f", ":[GWYme]") and not morph(dDA, nextword1(s, m.end()), ":N.*:f", False, False) ) ) and not morph(dDA, prevword1(s, m.start()), ":R", False, False)
+    return (morph(dDA, (m.start(2), m.group(2)), ">(?:être|sembler|devenir|re(?:ster|devenir)|para[îi]tre) ", False) or m.group(2).endswith(" été")) and ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWYsi]") or ( morphex(dDA, (m.start(3), m.group(3)), ":[AQ].*:f", ":[GWYme]") and not morph(dDA, nextword1(s, m.end()), ":N.*:f", False, False) ) ) and not morph(dDA, prevword1(s, m.start()), ":(?:R|V...t)", False, False)
 def s_ppas_ça_verbe_1 (s, m):
+    return suggMasSing(m.group(3))
+def c_ppas_lequel_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return (morph(dDA, (m.start(2), m.group(2)), ">(?:être|sembler|devenir|re(?:ster|devenir)|para[îi]tre) ", False) or m.group(2).endswith(" été")) and ( morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWYsi]") or ( morphex(dDA, (m.start(3), m.group(3)), ":[AQ].*:f", ":[GWYme]") and not morph(dDA, nextword1(s, m.end()), ":N.*:f", False, False) ) ) and not morph(dDA, prevword1(s, m.start()), ":R", False, False)
+def s_ppas_lequel_verbe_1 (s, m):
     return suggMasSing(m.group(3))
 def c_ppas_elle_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return (morph(dDA, (m.start(2), m.group(2)), ">(?:être|sembler|devenir|re(?:ster|devenir)|para[îi]tre) ", False) or m.group(2).endswith(" été")) and (morphex(dDA, (m.start(3), m.group(3)), ":[NAQ].*:p", ":[GWYsi]") or morphex(dDA, (m.start(3), m.group(3)), ":[AQ].*:m", ":[GWYfe]")) and not morph(dDA, prevword1(s, m.start()), ":R|>de ", False, False)
@@ -3922,11 +4396,11 @@ def c_ppas_avoir_été_2 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_ppas_avoir_été_2 (s, m):
     return suggVerbPpas(m.group(3))
 def c_ppas_avoir_été_3 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not (morph(dDA, (m.start(2), m.group(2)), ":(?:Sq|K):3s", False) and look(s[:m.start()], "[çcCÇ]’$|[cC]e n’$|[çÇ]a (?:n’|)$"))
+    return not look(s[:m.start()], "[çcCÇ]’$|[cC]e n’$|[çÇ]a (?:n’|)$") and not look(s[:m.start()], "(?i)^ *ne pas ") and not morph(dDA, prevword1(s, m.start()), ":Y", False)
 def c_ppas_avoir_été_4 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(3), m.group(3)), ":Y", False)
+    return morphex(dDA, (m.start(3), m.group(3)), ":Y", ":A")
 def c_ppas_avoir_été_5 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(3), m.group(3)), ":V1..t.*:Y", False)
+    return morphex(dDA, (m.start(3), m.group(3)), ":V1..t.*:Y", ":A")
 def s_ppas_avoir_été_5 (s, m):
     return suggVerbPpas(m.group(3))
 def c_ppas_je_verbe_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4020,15 +4494,15 @@ def c_ppas_inversion_être_elle_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_ppas_inversion_être_elle_1 (s, m):
     return suggFemSing(m.group(1))
 def c_ppas_inversion_être_nous_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y|[NAQ].*:s)", ":[GWpi]")
+    return morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y|[NAQ].*:s)", ":[GWpi]|>dire ")
 def s_ppas_inversion_être_nous_1 (s, m):
     return suggPlur(m.group(1))
 def c_ppas_inversion_être_ils_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not re.search("(?i)^légion$", m.group(1)) and (morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y|[NAQ].*:s)", ":[GWpi]") or morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|[AQ].*:f)", ":[GWme]"))
+    return not re.search("(?i)^légion$", m.group(1)) and (morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y|[NAQ].*:s)", ":[GWpi]|>dire ") or morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|[AQ].*:f)", ":[GWme]|>dire "))
 def s_ppas_inversion_être_ils_1 (s, m):
     return suggMasPlur(m.group(1))
 def c_ppas_inversion_être_elles_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not re.search("(?i)^légion$", m.group(1)) and (morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y|[NAQ].*:s)", ":[GWpi]") or morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|[AQ].*:m)", ":[GWfe]"))
+    return not re.search("(?i)^légion$", m.group(1)) and (morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|Y|[NAQ].*:s)", ":[GWpi]|>dire ") or morphex(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|[AQ].*:m)", ":[GWfe]|>dire "))
 def s_ppas_inversion_être_elles_1 (s, m):
     return suggFemPlur(m.group(1))
 def c_ppas_sont_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4072,41 +4546,45 @@ def c_ppas_elles_se_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_ppas_elles_se_verbe_1 (s, m):
     return suggFemPlur(m.group(3))
 def c_ppas_le_verbe_pensée_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:(?:[me]:p|f)", ":(?:G|Y|[AQ].*:m:[is])")
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:(?:[me]:p|f)", ":(?:G|Y|[AQ].*:m:[is])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_le_verbe_pensée_1 (s, m):
     return suggMasSing(m.group(2))
 def c_ppas_la_verbe_pensée_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:(?:[fe]:p|m)", ":(?:G|Y|[AQ]:f:[is])")
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:(?:[fe]:p|m)", ":(?:G|Y|[AQ]:f:[is])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_la_verbe_pensée_1 (s, m):
     return suggFemSing(m.group(2))
 def c_ppas_les_verbe_pensée_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:s", ":(?:G|Y|[AQ].*:[ip])")
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:s", ":(?:G|Y|[AQ].*:[ip])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_les_verbe_pensée_1 (s, m):
     return suggPlur(m.group(2))
 def c_ppas_me_te_verbe_pensée_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(3), m.group(3)), ":[AQ].*:p", ":(?:G|Y|[AQ].*:[is])")
+    return morph(dDA, (m.start(2), m.group(2)), ">(?:trouver|considérer|croire|rendre|voilà) ", False) and morphex(dDA, (m.start(3), m.group(3)), ":[AQ].*:p", ":(?:G|Y|[AQ].*:[is])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_me_te_verbe_pensée_1 (s, m):
     return suggSing(m.group(3))
 def c_ppas_se_verbe_pensée_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre) .*:3s", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:p", ":(?:G|Y|[AQ].*:[is])")
+    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre) .*:3s", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:p", ":(?:G|Y|[AQ].*:[is])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_se_verbe_pensée_1 (s, m):
     return suggSing(m.group(2))
 def c_ppas_se_verbe_pensée_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre) .*:3p", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:s", ":(?:G|Y|[AQ].*:[ip])")
+    return not bCondMemo and morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre) .*:3p", False) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:s", ":(?:G|Y|[AQ].*:[ip])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_se_verbe_pensée_2 (s, m):
-    return suggSing(m.group(2))
+    return suggPlur(m.group(2))
 def c_ppas_nous_verbe_pensée_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return ( morphex(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", ":1p") or (morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire) .*:1p", False) and look(s[:m.start()], r"\bn(?:ous|e) +$")) ) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:s", ":(?:G|Y|[AQ].*:[ip])")
+    return ( morphex(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire|rendre|voilà) ", ":1p") or (morph(dDA, (m.start(1), m.group(1)), ">(?:trouver|considérer|croire) .*:1p", False) and look(s[:m.start()], r"\bn(?:ous|e) +$")) ) and morphex(dDA, (m.start(2), m.group(2)), ":[AQ].*:s", ":(?:G|Y|[AQ].*:[ip])") and not (morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":3s", False))
 def s_ppas_nous_verbe_pensée_1 (s, m):
     return suggPlur(m.group(2))
 def c_p_les_avoir_fait_vinfi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">avoir ", False) and morph(dDA, (m.start(3), m.group(3)), ":Y", False)
 def c_ppas_pronom_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not re.search("(?i)^(?:barre|confiance|cours|envie|peine|prise|crainte|cure|affaire|hâte|force|recours)$", m.group(3)) and morph(dDA, prevword1(s, m.start()), ">puisque? ", False, True) and morph(dDA, (m.start(2), m.group(2)), ":V0a", False) and not m.group(3).isupper() and morphex(dDA, (m.start(3), m.group(3)), ":(?:[123][sp]|Q.*:[fp])", ":(?:G|W|Q.*:m:[si])")
+    return not re.search("(?i)^(?:barre|confiance|cours|envie|peine|prise|crainte|cure|affaire|hâte|force|recours)$", m.group(2)) and morph(dDA, prevword1(s, m.start()), ">(?:comme|et|lorsque?|mais|o[uù]|puisque?|qu(?:oique?|i|and)|si(?:non|)) ", False, True) and morph(dDA, (m.start(1), m.group(1)), ":V0a", False) and not m.group(2).isupper() and morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Q.*:[fp])", ":(?:G|W|Q.*:m:[si])")
 def s_ppas_pronom_avoir_1 (s, m):
+    return suggMasSing(m.group(2))
+def c_ppas_nous_vous_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":Os", False) and not re.search("(?i)^(?:barre|confiance|cours|envie|peine|prise|crainte|cure|affaire|hâte|force|recours)$", m.group(3)) and morph(dDA, prevword1(s, m.start()), ">(?:comme|et|lorsque?|mais|o[uù]|puisque?|qu(?:oique?|i|and)|si(?:non|)) ", False, True) and morph(dDA, (m.start(2), m.group(2)), ":V0a", False) and not m.group(3).isupper() and morphex(dDA, (m.start(3), m.group(3)), ":(?:[123][sp]|Q.*:[fp])", ":(?:G|W|Q.*:m:[si])")
+def s_ppas_nous_vous_avoir_1 (s, m):
     return suggMasSing(m.group(3))
 def c_ppas_det_nom_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not re.search("(?i)^(?:barre|confiance|cours|envie|peine|prise|crainte|cure|affaire|hâte|force|recours)$", m.group(4)) and morph(dDA, prevword1(s, m.start()), ">puisque? ", False, True) and not morph(dDA, (m.start(2), m.group(2)), ":G", False) and morph(dDA, (m.start(3), m.group(3)), ":V0a", False) and not m.group(4).isupper() and morphex(dDA, (m.start(4), m.group(4)), ":(?:[123][sp]|Q.*:[fp])", ":(?:G|W|Q.*:m:[si])") and not (m.group(3) == "avions" and morph(dDA, (m.start(4), m.group(4)), ":3[sp]", False))
+    return not re.search("(?i)^(?:barre|confiance|cours|envie|peine|prise|crainte|cure|affaire|hâte|force|recours)$", m.group(4)) and morph(dDA, prevword1(s, m.start()), ">(?:comme|et|lorsque?|mais|o[uù]|puisque?|qu(?:oique?|i|and)|si(?:non|)) ", False, True) and not morph(dDA, (m.start(2), m.group(2)), ":G", False) and morph(dDA, (m.start(3), m.group(3)), ":V0a", False) and not m.group(4).isupper() and morphex(dDA, (m.start(4), m.group(4)), ":(?:[123][sp]|Q.*:[fp])", ":(?:G|W|Q.*:m:[si])") and not (m.group(3) == "avions" and morph(dDA, (m.start(4), m.group(4)), ":3[sp]", False))
 def s_ppas_det_nom_avoir_1 (s, m):
     return suggMasSing(m.group(4))
 def c_ppas_les_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4138,7 +4616,7 @@ def c_ppas_m_t_l_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_ppas_m_t_l_avoir_1 (s, m):
     return suggVerbPpas(m.group(2), ":m:s")
 def c_ppas_det_plur_COD_que_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(3), m.group(3)), ":V0a", False) and not ((re.search("^(?:décidé|essayé|tenté)$", m.group(4)) and look(s[m.end():], " +d(?:e |’)")) or (re.search("^réussi$", m.group(4)) and look(s[m.end():], " +à"))) and morph(dDA, (m.start(2), m.group(2)), ":[NAQ]", False) and morphex(dDA, (m.start(4), m.group(4)), ":V[0-3]..t.*:Q.*:s", ":[GWpi]") and not morph(dDA, nextword1(s, m.end()), ":(?:Y|Oo|D)", False)
+    return morph(dDA, (m.start(3), m.group(3)), ":V0a", False) and not ((re.search("^(?:décidé|essayé|tenté|oublié)$", m.group(4)) and look(s[m.end():], " +d(?:e |’)")) or (re.search("^réussi$", m.group(4)) and look(s[m.end():], " +à"))) and morph(dDA, (m.start(2), m.group(2)), ":[NAQ]", False) and morphex(dDA, (m.start(4), m.group(4)), ":V[0-3]..t.*:Q.*:s", ":[GWpi]") and not morph(dDA, nextword1(s, m.end()), ":(?:Y|Oo|D)", False)
 def s_ppas_det_plur_COD_que_avoir_1 (s, m):
     return suggPlur(m.group(4), m.group(2))
 def c_ppas_det_mas_sing_COD_que_avoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4209,17 +4687,57 @@ def s_conj_se_incohérence_3 (s, m):
     return suggVerbInfi(m.group(1))
 def c_conf_det_nom_où_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":[NAQ]", ":G")
+def c_p_premier_ne_pro_per_obj1_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj1_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj2_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj2_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj2_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(1), m.group(1)), ":X|>rien ", False)
+def c_p_premier_ne_pro_per_obj3_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj3_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj4_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj4_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj5_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj5_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj5_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(1), m.group(1)), ":X|>rien ", False)
+def c_p_premier_ne_pro_per_obj6_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj6_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj7_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P)", False)
+def d_p_premier_ne_pro_per_obj7_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2),":(?:[123][sp]|P)")
+def c_p_premier_ne_pro_per_obj7_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not morph(dDA, (m.start(2), m.group(2)), ":X|>rien ", False)
 def c_imp_confusion_2e_pers_pluriel_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":V", False) and look(s[:m.start()], "^ *$|, *$")
-def s_imp_confusion_2e_pers_pluriel_1 (s, m):
+def c_imp_confusion_2e_pers_pluriel_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "moi"
+def s_imp_confusion_2e_pers_pluriel_2 (s, m):
     return suggVerbTense(m.group(1), ":E", ":2p") + "-moi"
+def c_imp_confusion_2e_pers_pluriel_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and m.group(2).startswith("l") and morph(dDA, nextword1(s, m.end()), ":[OR]", ":N", True)
+def s_imp_confusion_2e_pers_pluriel_3 (s, m):
+    return suggVerbTense(m.group(1), ":E", ":2p") + "-" + m.group(2)
+def c_imp_confusion_2e_pers_pluriel_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and look(s[m.end():], "^ *$|^,")
+def s_imp_confusion_2e_pers_pluriel_4 (s, m):
+    return suggVerbTense(m.group(1), ":E", ":2p") + "-" + m.group(2)
 def c_imp_vgroupe1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V[13].*:Ip.*:2s", ":[GNAM]")
 def s_imp_vgroupe1_1 (s, m):
-    return m.group(1)[:-1]
-def c_imp_ne_vgroupe1_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V[13].*:Ip.*:2s", ":G")
-def s_imp_ne_vgroupe1_1 (s, m):
     return m.group(1)[:-1]
 def c_imp_allez2_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[MYOs]")
@@ -4227,24 +4745,18 @@ def c_imp_vgroupe2_vgroupe3_t_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V[23].*:Ip.*:3s", ":[GNA]|>(?:devoir|suffire)") and analyse(m.group(1)[:-1]+"s", ":E:2s", False) and not (re.search("(?i)^vient$", m.group(1)) and look(s[m.end():], "^ +(?:l[ea]|se |s’)")) and not (re.search("(?i)^dit$", m.group(1)) and look(s[m.end():], "^ +[A-ZÉÈÂÎ]"))
 def s_imp_vgroupe2_vgroupe3_t_1 (s, m):
     return m.group(1)[:-1]+"s"
-def c_imp_ne_vgroupe2_vgroupe3_t_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V[23].*:Ip.*:3s", ":G|>(?:devoir|suffire)") and analyse(m.group(1)[:-1]+"s", ":E:2s", False)
-def s_imp_ne_vgroupe2_vgroupe3_t_1 (s, m):
-    return m.group(1)[:-1]+"s"
 def c_imp_vgroupe3_d_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V3.*:Ip.*:3s", ":[GNA]") and not (re.search("(?i)^répond$", m.group(1)) and look(s[m.end():], "^ +[A-ZÉÈÂÎ]"))
-def c_imp_ne_vgroupe3_d_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V3.*:Ip.*:3s", ":G")
 def c_imp_sois_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":A", ":G") and not look(s[m.end():], r"\bsoit\b")
+    return morph(dDA, (m.start(1), m.group(1)), ":V") or (morphex(dDA, (m.start(2), m.group(2)), ":A", ":G") and not look(s[m.end():], r"\bsoit\b"))
 def c_imp_verbe_lui_le_la_les_leur_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, (m.start(1), m.group(1)), ":E|>chez", False) and _oDict.isValid(m.group(1))
+    return not morph(dDA, (m.start(1), m.group(1)), ":E|>chez", False) and _oSpellChecker.isValid(m.group(1))
 def s_imp_verbe_lui_le_la_les_leur_1 (s, m):
     return suggVerbImpe(m.group(1))
 def c_imp_verbe_lui_le_la_les_leur_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(2) == "leurs"
 def c_imp_verbe_moi_toi_m_t_en_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not morph(dDA, (m.start(1), m.group(1)), ":E|>chez", False) and _oDict.isValid(m.group(1))
+    return not morph(dDA, (m.start(1), m.group(1)), ":E|>chez", False) and _oSpellChecker.isValid(m.group(1))
 def s_imp_verbe_moi_toi_m_t_en_1 (s, m):
     return suggVerbTense(m.group(1), ":E", ":2s")
 def c_imp_union_moi_toi_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4285,52 +4797,184 @@ def c_imp_union_vas_y_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], "^ *$|, *$") and not morph(dDA, nextword1(s, m.end()), ":Y", False, False)
 def s_imp_union_convenir_en_1 (s, m):
     return m.group(0).replace(" ", "-")
+def c_p_pro_per_obj01_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj01_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj02_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj02_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj03_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj03_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj04_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj04_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj05_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj05_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj06_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":R", False, True)
+def c_p_pro_per_obj06_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj06_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj07_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":R", False, False)
+def c_p_pro_per_obj07_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj07_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj08_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj08_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj08_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_p_pro_per_obj09_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) == "le" and not morph(dDA, (m.start(2), m.group(2)), ":N.*:[me]:[si]")
+    return (m.group(1) == "le" and not morph(dDA, (m.start(2), m.group(2)), ":N.*:[me]:[si]")) or (m.group(1) == "la" and not morph(dDA, (m.start(2), m.group(2)), ":N.*:[fe]:[si]")) or (m.group(1) == "les" and not morph(dDA, (m.start(2), m.group(2)), ":N.*:.:[pi]"))
 def c_p_pro_per_obj09_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) == "la" and not morph(dDA, (m.start(2), m.group(2)), ":N.*:[fe]:[si]")
-def c_p_pro_per_obj09_3 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) == "les" and not morph(dDA, (m.start(2), m.group(2)), ":N.*:.:[pi]")
+    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj09_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj10_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":R", False, False)
+def c_p_pro_per_obj10_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj10_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj11_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj11_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj11_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_p_pro_per_obj12_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[123][sp]")
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj13_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":[123]s", False, False)
+def c_p_pro_per_obj13_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj13_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj14_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":(?:[123]s|R)", False, False)
+def c_p_pro_per_obj14_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj14_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj15_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":(?:[123]p|R)", False, False)
+def c_p_pro_per_obj15_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj15_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj16_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, prevword1(s, m.start()), ":3p", False, False)
+def c_p_pro_per_obj16_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj16_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj17_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[123][sp]", False)
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def c_p_pro_per_obj17_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def d_p_pro_per_obj17_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj18_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:[NAQ].*:[me]:[si]|G|M)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", ":(?:[NAQ].*:[me]:[si]|G|M)")
+def c_p_pro_per_obj18_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def d_p_pro_per_obj18_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj19_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:[NAQ].*:[fe]:[si]|G|M)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", ":(?:[NAQ].*:[fe]:[si]|G|M)")
+def c_p_pro_per_obj19_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def d_p_pro_per_obj19_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj20_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:[NAQ].*:[si]|G|M)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", ":(?:[NAQ].*:[si]|G|M)")
+def c_p_pro_per_obj20_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def d_p_pro_per_obj20_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj21_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:[NAQ].*:[si]|G|M)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", ":(?:[NAQ].*:[si]|G|M)")
+def c_p_pro_per_obj21_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def d_p_pro_per_obj21_2 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def d_p_pro_per_obj22_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":V")
 def c_p_pro_per_obj23_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:A|G|M|1p)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", ":(?:A|G|M|1p)")
+def d_p_pro_per_obj23_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj23_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_p_pro_per_obj24_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|Y)", ":(?:A|G|M|2p)")
+    return morphex(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", ":(?:A|G|M|2p)")
+def d_p_pro_per_obj24_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj24_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def c_p_pro_per_obj25_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj25_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
 def c_p_pro_per_obj26_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":V", False)
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj26_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj26_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_p_pro_per_obj27_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj27_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj27_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], "^ *$|, *$")
 def c_p_pro_per_obj28_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":V", False)
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj28_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj28_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_p_pro_per_obj29_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj29_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj29_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":2s", False) or look(s[:m.start()], r"(?i)\b(?:je|tu|on|ils?|elles?|nous) +$")
 def c_p_pro_per_obj30_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj30_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj30_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(2), m.group(2)), ":2s|>(ils?|elles?|on) ", False) or look(s[:m.start()], r"(?i)\b(?:je|tu|on|ils?|elles?|nous) +$")
+def c_p_pro_per_obj31_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj31_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj32_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj32_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj33_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj33_1 (s, m, dDA):
+    return select(dDA, m.start(1), m.group(1), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj34_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":(?:[123][sp]|P|Y)", False)
+def d_p_pro_per_obj34_1 (s, m, dDA):
+    return select(dDA, m.start(2), m.group(2), ":(?:[123][sp]|P|Y)")
+def c_p_pro_per_obj34_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_conf_pronom_verbe_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":V", False) and m.group(2) != "A"
 def c_conf_j_verbe_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4339,6 +4983,10 @@ def c_conf_nous_vous_verbe_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":Y") and m.group(2) != "A"
 def c_conf_ait_confiance_été_faim_tort_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], r"(?i)\b(?:ce que?|tout) ")
+def c_conf_veillez2_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[:m.start()], "^ *$|, *$") and morph(dDA, (m.start(2), m.group(2)), ":Y|>ne ", False)
+def c_conf_veuillez_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[:m.start()], "^ *$|, *$") and morph(dDA, (m.start(2), m.group(2)), ":Y|>ne ", False)
 def c_infi_comment_où_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":M") and not (m.group(1).endswith("ez") and look(s[m.end():], " +vous"))
 def s_infi_comment_où_1 (s, m):
@@ -4348,7 +4996,7 @@ def c_infi_qqch_de_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_infi_qqch_de_1 (s, m):
     return suggVerbInfi(m.group(1))
 def c_infi_verbe_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ">(?:aimer|aller|désirer|devoir|espérer|pouvoir|préférer|souhaiter|venir) ", False) and not morph(dDA, (m.start(1), m.group(1)), ":[GN]", False) and morphex(dDA, (m.start(2), m.group(2)), ":V", ":M")
+    return morphex(dDA, (m.start(1), m.group(1)), ">(?:aimer|aller|désirer|devoir|espérer|pouvoir|préférer|souhaiter|venir) ", ":[GN]") and morphex(dDA, (m.start(2), m.group(2)), ":V", ":M")
 def s_infi_verbe_1 (s, m):
     return suggVerbInfi(m.group(2))
 def c_infi_devoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4364,7 +5012,7 @@ def c_infi_mieux_valoir_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_infi_mieux_valoir_1 (s, m):
     return suggVerbInfi(m.group(2))
 def c_infi_à_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V1", ":[NM]") and not m.group(1).istitle() and not look(s[:m.start()], "> +$")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V1", ":[NM]") and not m.group(1).istitle() and not look(s[:m.start()], r"(?i)\b(?:les|en) +$")
 def s_infi_à_1 (s, m):
     return suggVerbInfi(m.group(1))
 def c_infi_avoir_beau_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4372,40 +5020,48 @@ def c_infi_avoir_beau_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_infi_avoir_beau_1 (s, m):
     return suggVerbInfi(m.group(2))
 def c_infi_par_pour_sans_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":[Q123][sp]?", ":Y")
+    return morphex(dDA, (m.start(1), m.group(1)), ":[Q123][sp]?", ":[YN]")
 def s_infi_par_pour_sans_1 (s, m):
     return suggVerbInfi(m.group(1))
 def c_ppas_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":V0e", False) and (morphex(dDA, (m.start(2), m.group(2)), ":Y", ":[NAQ]") or m.group(2) in aSHOULDBEVERB) and not re.search("(?i)^(?:soit|été)$", m.group(1)) and not morph(dDA, prevword1(s, m.start()), ":Y|>ce", False, False) and not look(s[:m.start()], "(?i)ce (?:>|qu|que >) $") and not look_chk1(dDA, s[:m.start()], 0, r"({w_2}) +> $", ":Y") and not look_chk1(dDA, s[:m.start()], 0, r"^ *>? *(\w[\w-]+)", ":Y")
+    return morph(dDA, (m.start(1), m.group(1)), ":V0e", False) and (morphex(dDA, (m.start(2), m.group(2)), ":Y", ":[NAQ]") or m.group(2) in aSHOULDBEVERB) and not re.search("(?i)^(?:soit|été)$", m.group(1)) and not morph(dDA, prevword1(s, m.start()), ":Y|>ce", False, False) and not look(s[:m.start()], "(?i)ce que? +$") and not morph(dDA, prevword1(s, m.start()), ":Y", False, False) and not look_chk1(dDA, s[:m.start()], 0, r"^ *>? *(\w[\w-]+)", ":Y")
 def s_ppas_être_1 (s, m):
     return suggVerbPpas(m.group(2))
 def c_conj_j_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":1s|>(?:en|y)")
-def s_conj_j_1 (s, m):
+    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":1s|>(?:en|y) ")
+def c_conj_j_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1) == "est" or m.group(1) == "es"
+def c_conj_j_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def s_conj_j_3 (s, m):
     return suggVerb(m.group(1), ":1s")
 def c_conj_je_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:1s|G)") and not (morph(dDA, (m.start(2), m.group(2)), ":[PQ]", False) and morph(dDA, prevword1(s, m.start()), ":V0.*:1s", False, False))
-def s_conj_je_1 (s, m):
-    return suggVerb(m.group(2), ":1s")
-def c_conj_je_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:1s|G|1p)")
-def s_conj_je_pronom_1 (s, m):
+def c_conj_je_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "est" or m.group(2) == "es"
+def c_conj_je_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def s_conj_je_3 (s, m):
     return suggVerb(m.group(2), ":1s")
 def c_conj_j_en_y_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:1s|G|1p)")
-def s_conj_j_en_y_1 (s, m):
+def c_conj_j_en_y_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "est" or m.group(2) == "es"
+def c_conj_j_en_y_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def s_conj_j_en_y_3 (s, m):
     return suggVerb(m.group(2), ":1s")
 def c_conj_moi_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:1s|G|1p|3p!)")
-def s_conj_moi_qui_1 (s, m):
+def c_conj_moi_qui_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(2) == "est" or m.group(2) == "es"
+def c_conj_moi_qui_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo
+def s_conj_moi_qui_3 (s, m):
     return suggVerb(m.group(2), ":1s")
 def c_conj_tu_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:G|[ISK].*:2s)") and not (morph(dDA, (m.start(2), m.group(2)), ":[PQ]", False) and morph(dDA, prevword1(s, m.start()), ":V0.*:2s", False, False))
 def s_conj_tu_1 (s, m):
-    return suggVerb(m.group(2), ":2s")
-def c_conj_tu_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:G|[ISK].*:2s)")
-def s_conj_tu_pronom_1 (s, m):
     return suggVerb(m.group(2), ":2s")
 def c_conj_toi_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:G|2p|3p!|[ISK].*:2s)")
@@ -4417,27 +5073,13 @@ def s_conj_il_1 (s, m):
     return suggVerb(m.group(2), ":3s")
 def c_conj_il_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3p", False)
-def c_conj_il_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|G)")
-def s_conj_il_pronom_1 (s, m):
-    return suggVerb(m.group(2), ":3s")
-def c_conj_il_pronom_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3p", False)
 def c_conj_on_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|G)") and not (morph(dDA, (m.start(2), m.group(2)), ":[PQ]", False) and morph(dDA, prevword1(s, m.start()), ":V0.*:3s", False, False))
 def s_conj_on_1 (s, m):
     return suggVerb(m.group(2), ":3s")
-def c_conj_on_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|G)")
-def s_conj_on_pronom_1 (s, m):
-    return suggVerb(m.group(2), ":3s")
 def c_conj_quiconque_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":(?:3s|P|G|Q.*:m:[si])")
 def s_conj_quiconque_1 (s, m):
-    return suggVerb(m.group(1), ":3s")
-def c_conj_quiconque_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":(?:3s|P|G)")
-def s_conj_quiconque_pronom_1 (s, m):
     return suggVerb(m.group(1), ":3s")
 def c_conj_ce_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:N|A|3s|P|Q|G|V0e.*:3p)")
@@ -4448,7 +5090,7 @@ def c_conj_celui_celle_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_conj_celui_celle_qui_1 (s, m):
     return suggVerb(m.group(2), ":3s")
 def c_conj_ça_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|Q|G|3p!)") and not morph(dDA, prevword1(s, m.start()), ":[VR]|>de", False, False)
+    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|Q|G|3p!)") and not morph(dDA, prevword1(s, m.start()), ":[VR]|>de ", False, False)
 def s_conj_ça_1 (s, m):
     return suggVerb(m.group(2), ":3s")
 def c_conj_tout_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4475,12 +5117,6 @@ def s_conj_elle_1 (s, m):
     return suggVerb(m.group(2), ":3s")
 def c_conj_elle_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3p", False)
-def c_conj_elle_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|G)") and not morph(dDA, prevword1(s, m.start()), ":R|>(?:et|ou)", False, False)
-def s_conj_elle_pronom_1 (s, m):
-    return suggVerb(m.group(2), ":3s")
-def c_conj_elle_pronom_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3p", False)
 def s_conj_mieux_vaut_1 (s, m):
     return m.group(1)[:-1]+"t"
 def c_conj_personne_aucun_rien_nul_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4491,9 +5127,9 @@ def c_conj_un_une_des_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|G|Q)") and morphex(dDA, prevword1(s, m.start()), ":C", ":(?:Y|P|Q|[123][sp]|R)", True) and not morph(dDA, (m.start(2), m.group(2)), ":[NA].*:[pi]", False)
 def s_conj_un_une_des_1 (s, m):
     return suggVerb(m.group(2), ":3s")
-def c_conj_un_une_des_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3s|P|G)") and morphex(dDA, prevword1(s, m.start()), ":C", ":(?:Y|P|Q|[123][sp]|R)", True)
-def s_conj_un_une_des_pronom_1 (s, m):
+def c_conj_un_une_des_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3[sp]|P|G)") and morphex(dDA, prevword1(s, m.start()), ":C", ":(?:Y|P|Q|[123][sp]|R)", True)
+def s_conj_un_une_des_qui_1 (s, m):
     return suggVerb(m.group(2), ":3s")
 def c_conj_infi_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":Y", False) and morph(dDA, (m.start(2), m.group(2)), ":V.[a-z_!?]+(?!.*:(?:3s|P|Q|Y|3p!))")
@@ -4523,10 +5159,6 @@ def c_conj_det_sing_nom_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not ( re.search("(?i)^(?:une? +(?:dizaine|douzaine|quinzaine|vingtaine|trentaine|quarantaine|cinquantaine|soixantaine|centaine|majorité|minorité|millier|partie|poignée|tas|paquet) |la +moitié) ", m.group(0)) and morph(dDA, (m.start(3), m.group(3)), ":3p", False) ) and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:3s|P|Q|Y|3p!|G)") and morphex(dDA, prevword1(s, m.start()), ":C", ":(?:Y|P)", True) and not (look(s[:m.start()], r"(?i)\b(?:et|ou) +$") and morph(dDA, (m.start(3), m.group(3)), ":[123]p", False)) and not look(s[:m.start()], r"(?i)\bni .* ni ")
 def s_conj_det_sing_nom_qui_1 (s, m):
     return suggVerb(m.group(3), ":3s")
-def c_conj_det_sing_nom_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not ( re.search("(?i)^(?:une? +(?:dizaine|douzaine|quinzaine|vingtaine|trentaine|quarantaine|cinquantaine|soixantaine|centaine|majorité|minorité|millier|partie|poignée|tas|paquet) |la +moitié) ", m.group(0)) and morph(dDA, (m.start(3), m.group(3)), ":3p", False) ) and morphex(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[si]", ":G") and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:3s|1p|P|Q|Y|3p!|G)") and morphex(dDA, prevword1(s, m.start()), ":C", ":(?:Y|P)", True) and not (look(s[:m.start()], r"(?i)\b(?:et|ou) +$") and morph(dDA, (m.start(3), m.group(3)), ":[123]p", False)) and not look(s[:m.start()], r"(?i)\bni .* ni ")
-def s_conj_det_sing_nom_pronom_1 (s, m):
-    return suggVerb(m.group(3), ":3s")
 def c_conj_nous_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":(?:1p|3[sp])") and not look(s[m.end():], "^ +(?:je|tu|ils?|elles?|on|[vn]ous)")
 def s_conj_nous_pronom_1 (s, m):
@@ -4553,12 +5185,6 @@ def s_conj_ils_1 (s, m):
     return suggVerb(m.group(2), ":3p")
 def c_conj_ils_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3s", False)
-def c_conj_ils_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3p|P|G)")
-def s_conj_ils_pronom_1 (s, m):
-    return suggVerb(m.group(2), ":3p")
-def c_conj_ils_pronom_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3s", False)
 def c_conj_ceux_celles_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3p|P|Q|G)")
 def s_conj_ceux_celles_qui_1 (s, m):
@@ -4572,12 +5198,6 @@ def c_conj_elles_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_conj_elles_1 (s, m):
     return suggVerb(m.group(2), ":3p")
 def c_conj_elles_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3s", False)
-def c_conj_elles_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:3p|P|G)") and not morph(dDA, prevword1(s, m.start()), ":R", False, False)
-def s_conj_elles_pronom_1 (s, m):
-    return suggVerb(m.group(2), ":3p")
-def c_conj_elles_pronom_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return bCondMemo and morph(dDA, (m.start(2), m.group(2)), ":3s", False)
 def c_conf_ont2_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return not look(s[:m.start()], r"(?i)\b(?:à|avec|sur|chez|par|dans|parmi|contre|ni|de|pour|sous) +$")
@@ -4593,6 +5213,22 @@ def c_conj_certains_tous_plusieurs_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:G|N|A|3p|P|Q)") and not morph(dDA, prevword1(s, m.start()), ":[VR]", False, False)
 def s_conj_certains_tous_plusieurs_1 (s, m):
     return suggVerb(m.group(2), ":3p")
+def c_conj_certains_certaines_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return look(s[:m.start()], "^ *$|, *$")
+def c_conj_certains_certaines_2 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morphex(dDA, (m.start(2), m.group(2)), ":V.*:[123]p", ":[GWM]")
+def c_conj_certains_certaines_3 (s, sx, m, dDA, sCountry, bCondMemo):
+    return m.group(1).endswith("n") and morphex(dDA, (m.start(2), m.group(2)), ":V.*:[123]s", ":(?:V0e.*:3s|N.*:[me]:[si])")
+def s_conj_certains_certaines_3 (s, m):
+    return suggVerb(m.group(2), ":3p")
+def c_conj_certains_certaines_4 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
+def c_conj_certains_certaines_5 (s, sx, m, dDA, sCountry, bCondMemo):
+    return not bCondMemo and m.group(1).endswith("e") and morphex(dDA, (m.start(2), m.group(2)), ":V.*:[123]s", ":(?:V0e.*:3s|N.*:[fe]:[si])")
+def s_conj_certains_certaines_5 (s, m):
+    return suggVerb(m.group(2), ":3p")
+def c_conj_certains_certaines_6 (s, sx, m, dDA, sCountry, bCondMemo):
+    return bCondMemo
 def c_conj_det_plur_nom_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:[13]p|P|Y|G|A.*:e:[pi])") and morphex(dDA, prevword1(s, m.start()), ":C", ":[YP]", True) and not( morph(dDA, (m.start(3), m.group(3)), ":3s", False) and look(s[:m.start()], r"(?i)\b(?:l[ea] |l’|une? |ce(?:tte|t|) |[mts](?:on|a) |[nv]otre ).+ entre .+ et ") )
 def c_conj_det_plur_nom_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4606,10 +5242,6 @@ def s_conj_det_plur_nom_3 (s, m):
 def c_conj_det_plur_nom_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:[13]p|P|Y|G|A.*:e:[pi])") and morphex(dDA, prevword1(s, m.start()), ":C", ":[YP]", True) and not( morph(dDA, (m.start(3), m.group(3)), ":3s", False) and look(s[:m.start()], r"(?i)\b(?:l[ea] |l’|une? |ce(?:tte|t|) |[mts](?:on|a) |[nv]otre ).+ entre .+ et ") )
 def s_conj_det_plur_nom_qui_1 (s, m):
-    return suggVerb(m.group(3), ":3p")
-def c_conj_det_plur_nom_pronom_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:[13]p|P|Y|G)") and morphex(dDA, prevword1(s, m.start()), ":C", ":[YP]", True) and not( morph(dDA, (m.start(3), m.group(3)), ":3s", False) and look(s[:m.start()], r"(?i)\b(?:l[ea] |l’|une? |ce(?:tte|t|) |[mts](?:on|a) |[nv]otre ).+ entre .+ et ") )
-def s_conj_det_plur_nom_pronom_1 (s, m):
     return suggVerb(m.group(3), ":3p")
 def c_conj_det_plur_nom_confusion_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:[13]p|P|Y|G|A.*:e:[pi])") and morphex(dDA, prevword1(s, m.start()), ":C", ":[YP]", True) and not( morph(dDA, (m.start(3), m.group(3)), ":3s", False) and look(s[:m.start()], r"(?i)\b(?:l[ea] |l’|une? |ce(?:tte|t|) |[mts](?:on|a) |[nv]otre ).+ entre .+ et ") )
@@ -4633,10 +5265,6 @@ def c_conj_det_plur_nom_qui_confusion_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:[13]p|P|Q|Y|G|A.*:e:[pi])") and morphex(dDA, prevword1(s, m.start()), ":C", ":[YP]", True) and not( morph(dDA, (m.start(3), m.group(3)), ":3s", False) and look(s[:m.start()], r"(?i)\b(?:l[ea] |l’|une? |ce(?:tte|t|) |[mts](?:on|a) |[nv]otre ).+ entre .+ et ") )
 def s_conj_det_plur_nom_qui_confusion_1 (s, m):
     return suggVerb(m.group(3), ":3p")
-def c_conj_det_plur_nom_pronom_confusion_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(3), m.group(3)), ":V", ":(?:[13]p|P|Y|G)") and morphex(dDA, prevword1(s, m.start()), ":C", ":[YP]", True) and not( morph(dDA, (m.start(3), m.group(3)), ":3s", False) and look(s[:m.start()], r"(?i)\b(?:l[ea] |l’|une? |ce(?:tte|t|) |[mts](?:on|a) |[nv]otre ).+ entre .+ et ") )
-def s_conj_det_plur_nom_pronom_confusion_1 (s, m):
-    return suggVerb(m.group(3), ":3p")
 def c_conj_des_nom1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:[13]p|P|G|Q|A.*:[pi])") and morph(dDA, nextword1(s, m.end()), ":(?:R|D.*:p)|>au ", False, True)
 def c_conj_des_nom1_2 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4647,10 +5275,6 @@ def c_conj_des_nom1_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo and not checkAgreement(m.group(1), m.group(2))
 def s_conj_des_nom1_3 (s, m):
     return suggVerb(m.group(2), ":3p", suggPlur)
-def c_conj_des_nom2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:[13]p|P|G|Q)") and morph(dDA, nextword1(s, m.end()), ":(?:R|D.*:p)|>au ", False, True)
-def s_conj_des_nom2_1 (s, m):
-    return suggVerb(m.group(2), ":3p")
 def c_conj_des_nom_qui_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":[NAQ].*:[pi]", False) and morphex(dDA, (m.start(2), m.group(2)), ":V", ":(?:[13]p|P|G)")
 def s_conj_des_nom_qui_1 (s, m):
@@ -4686,12 +5310,8 @@ def c_conj_que_où_comment_verbe_sujet_pluriel_1 (s, sx, m, dDA, sCountry, bCond
 def s_conj_que_où_comment_verbe_sujet_pluriel_1 (s, m):
     return suggVerb(m.group(1), ":3p")
 def c_conj_que_où_comment_verbe_sujet_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":[12][sp]", ":(?:G|W|3[sp]|Y|P|Q|N)")
+    return morphex(dDA, (m.start(1), m.group(1)), ":[12][sp]", ":(?:G|W|3[sp]|Y|P|Q|N|M)")
 def s_conj_que_où_comment_verbe_sujet_1 (s, m):
-    return suggVerb(m.group(1), ":3s")
-def c_conj_que_où_verbe_sujet_3sg_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":[12][sp]", ":(?:G|W|3[sp])")
-def s_conj_que_où_verbe_sujet_3sg_1 (s, m):
     return suggVerb(m.group(1), ":3s")
 def c_conj_puisse_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return look(s[:m.start()], "^ *$|, *$")
@@ -4700,25 +5320,25 @@ def c_conj_puisse_2 (s, sx, m, dDA, sCountry, bCondMemo):
 def c_conj_puisse_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not bCondMemo and m.group(1).endswith("s") and m.group(2) != "tu" and not look(s[:m.start()], r"(?i)\btu ")
 def c_inte_union_xxxe_je_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:1[sŝś]", ":[GNW]") and not look(s[:m.start()], r"(?i)\bje +>? *$") and not morph(dDA, nextword1(s, m.end()), ":(?:Oo|X|1s)", False, False)
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:1[sŝś]", ":[GNW]") and not look(s[:m.start()], r"(?i)\bje +$") and morphex(dDA, nextword1(s, m.end()), ":", ":(?:Oo|X|1s)", True)
 def s_inte_union_xxxe_je_1 (s, m):
     return m.group(1)[:-1]+"é-je"
 def c_inte_union_xxx_je_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:1s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:je|tu) +>? *$") and not morph(dDA, nextword1(s, m.end()), ":(?:Oo|X|1s)", False, False)
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:1s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:je|tu) +$") and morphex(dDA, nextword1(s, m.end()), ":", ":(?:Oo|X|1s)", True)
 def c_inte_union_tu_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], "^ +(?:en|y|ne|>)") and morphex(dDA, (m.start(1), m.group(1)), ":V.*:2s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:je|tu) +>? *$")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:2s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:je|tu) +$") and morphex(dDA, nextword1(s, m.end()), ":", ":2s", True)
 def c_inte_union_il_on_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], "^ +(?:en|y|ne|>)") and morphex(dDA, (m.start(1), m.group(1)), ":V.*:3s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:ce|il|elle|on) +>? *$")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:3s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:ce|il|elle|on) +$") and morphex(dDA, nextword1(s, m.end()), ":", ":3s|>y ", True)
 def s_inte_union_il_on_1 (s, m):
     return m.group(0).replace(" ", "-")
 def c_inte_union_elle_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], "^ +(?:en|y|ne|aussi|>)") and morphex(dDA, (m.start(1), m.group(1)), ":V.*:3s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:ce|il|elle|on) +>? *$")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:3s", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:ce|il|elle|on) +$") and morphex(dDA, nextword1(s, m.end()), ":", ":3s", True)
 def c_inte_union_nous_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], "^ +(?:en|y|ne|aussi|>)") and morphex(dDA, (m.start(1), m.group(1)), ":V.*:1p", ":[GNW]") and not morph(dDA, prevword1(s, m.start()), ":Os", False, False) and not morph(dDA, nextword1(s, m.end()), ":Y", False, False)
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:1p", ":[GNW]") and not morph(dDA, prevword1(s, m.start()), ":Os", False, False) and morphex(dDA, nextword1(s, m.end()), ":", ":(?:Y|1p)", True)
 def c_inte_union_vous_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], "^ +(?:en|y|ne|aussi|>)") and not m.group(1).endswith("euillez") and morphex(dDA, (m.start(1), m.group(1)), ":V.*:2p", ":[GNW]") and not morph(dDA, prevword1(s, m.start()), ":Os", False, False) and not morph(dDA, nextword1(s, m.end()), ":Y", False, False)
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:2p", ":[GNW]|>vouloir .*:E:2p") and not morph(dDA, prevword1(s, m.start()), ":Os", False, False) and morphex(dDA, nextword1(s, m.end()), ":", ":(?:Y|2p)", True)
 def c_inte_union_ils_elles_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return not look(s[m.end():], "^ +(?:en|y|ne|aussi|>)") and morphex(dDA, (m.start(1), m.group(1)), ":V.*:3p", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:ce|ils|elles) +>? *$")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V.*:3p", ":[GNW]") and not look(s[:m.start()], r"(?i)\b(?:ce|ils|elles) +$") and morphex(dDA, nextword1(s, m.end()), ":", ":3p", True)
 def s_inte_union_ils_elles_1 (s, m):
     return m.group(0).replace(" ", "-")
 def c_inte_je_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4728,7 +5348,7 @@ def s_inte_je_1 (s, m):
 def c_inte_je_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(1), m.group(1)), ":V", False)
 def s_inte_je_2 (s, m):
-    return suggSimil(m.group(1), ":1[sśŝ]")
+    return suggSimil(m.group(1), ":1[sśŝ]", False)
 def c_inte_tu_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":[ISK].*:2s")
 def s_inte_tu_1 (s, m):
@@ -4736,7 +5356,7 @@ def s_inte_tu_1 (s, m):
 def c_inte_tu_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(1), m.group(1)), ":V", False)
 def s_inte_tu_2 (s, m):
-    return suggSimil(m.group(1), ":2s")
+    return suggSimil(m.group(1), ":2s", False)
 def c_inte_il_elle_on_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":3s")
 def s_inte_il_elle_on_1 (s, m):
@@ -4744,17 +5364,17 @@ def s_inte_il_elle_on_1 (s, m):
 def c_inte_il_elle_on_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(1) != "t" and (not m.group(1).endswith("oilà") or m.group(2) != "il") and morphex(dDA, (m.start(1), m.group(1)), ":", ":V")
 def s_inte_il_elle_on_2 (s, m):
-    return suggSimil(m.group(1), ":3s")
+    return suggSimil(m.group(1), ":3s", False)
 def c_inte_il_elle_on_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return not m.group(2).endswith(("n", "N")) and morphex(dDA, (m.start(1), m.group(1)), ":3p", ":3s")
 def c_inte_ce_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":3s")
+    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":(?:3s|V0e.*:3p)")
 def s_inte_ce_1 (s, m):
     return suggVerb(m.group(1), ":3s")
 def c_inte_ce_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":", ":V")
 def s_inte_ce_2 (s, m):
-    return suggSimil(m.group(1), ":3s")
+    return suggSimil(m.group(1), ":3s", False)
 def c_inte_ce_3 (s, sx, m, dDA, sCountry, bCondMemo):
     return m.group(2) == "se"
 def c_inte_nous_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4764,7 +5384,7 @@ def s_inte_nous_1 (s, m):
 def c_inte_nous_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":", ":V|>chez ")
 def s_inte_nous_2 (s, m):
-    return suggSimil(m.group(1), ":1p")
+    return suggSimil(m.group(1), ":1p", False)
 def c_inte_vous_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morphex(dDA, (m.start(1), m.group(1)), ":V", ":2p")
 def s_inte_vous_1 (s, m):
@@ -4772,23 +5392,23 @@ def s_inte_vous_1 (s, m):
 def c_inte_vous_2 (s, sx, m, dDA, sCountry, bCondMemo):
     return not morph(dDA, (m.start(1), m.group(1)), ":V|>chez ", False)
 def s_inte_vous_2 (s, m):
-    return suggSimil(m.group(1), ":2p")
+    return suggSimil(m.group(1), ":2p", False)
 def c_inte_ils_elles_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":3p") and _oDict.isValid(m.group(1))
+    return morphex(dDA, (m.start(1), m.group(1)), ":V", ":3p") and _oSpellChecker.isValid(m.group(1))
 def s_inte_ils_elles_1 (s, m):
     return suggVerb(m.group(1), ":3p")
 def c_inte_ils_elles_2 (s, sx, m, dDA, sCountry, bCondMemo):
-    return m.group(1) != "t" and not morph(dDA, (m.start(1), m.group(1)), ":V", False) and _oDict.isValid(m.group(1))
+    return m.group(1) != "t" and not morph(dDA, (m.start(1), m.group(1)), ":V", False) and _oSpellChecker.isValid(m.group(1))
 def s_inte_ils_elles_2 (s, m):
-    return suggSimil(m.group(1), ":3p")
+    return suggSimil(m.group(1), ":3p", False)
 def c_conf_avoir_sujet_participe_passé_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">avoir ", False) and morph(dDA, (m.start(2), m.group(2)), ":V.......e_.*:Q", False)
 def c_conf_sujet_avoir_participe_passé_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ">avoir ", False) and morph(dDA, (m.start(2), m.group(2)), ":V.......e_.*:Q", False)
 def c_vmode_j_aimerais_vinfi_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morphex(dDA, (m.start(2), m.group(2)), ":[YX]|>y ", "R")
-def c_vmode_j_aurais_aimé_que_avoir_être2_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(2), m.group(2)), ":Y", False)
+    return morphex(dDA, (m.start(2), m.group(2)), ":[YX]|>(?:y|ne|que?) ", ":R") and look(s[:m.start()], "^ *$|, *$")
+def c_vmode_j_aurais_aimé_que_avoir_être_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(2), m.group(2)), ":Y|>(?:ne|que?) ", False)
 def c_vmode_si_sujet1_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":(?:Os|M)", False) and morphex(dDA, (m.start(2), m.group(2)), ":[SK]", ":(?:G|V0|I)") and look(s[:m.start()], "^ *$|, *$")
 def c_vmode_si_sujet2_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4802,7 +5422,7 @@ def c_vmode_qqch_que_subjonctif1_1 (s, sx, m, dDA, sCountry, bCondMemo):
 def s_vmode_qqch_que_subjonctif1_1 (s, m):
     return suggVerbMode(m.group(3), ":S", m.group(2))
 def c_vmode_bien_que_subjonctif_1 (s, sx, m, dDA, sCountry, bCondMemo):
-    return morph(dDA, (m.start(1), m.group(1)), ":(?:Os|M)", False) and morphex(dDA, (m.start(2), m.group(2)), ":V.*:I", ":([GSK]|If)|>(?:hériter|recevoir|donner|offrir) ") and look(s[:m.start()], "^ *$|, *$") and not ( morph(dDA, (m.start(2), m.group(2)), ":V0a", False) and morph(dDA, nextword1(s, m.end()), ">(?:hériter|recevoir|donner|offrir) ", False) )
+    return morph(dDA, (m.start(1), m.group(1)), ":(?:Os|M)", False) and morphex(dDA, (m.start(2), m.group(2)), ":V.*:I", ":(?:[GSK]|If)|>(?:hériter|recevoir|donner|offrir) ") and look(s[:m.start()], "^ *$|, *$") and not ( morph(dDA, (m.start(2), m.group(2)), ":V0a", False) and morph(dDA, nextword1(s, m.end()), ">(?:hériter|recevoir|donner|offrir) ", False) ) and not look(sx[:m.start()], r"(?i)\bsi ")
 def s_vmode_bien_que_subjonctif_1 (s, m):
     return suggVerbMode(m.group(2), ":S", m.group(1))
 def c_vmode_qqch_que_subjonctif2_1 (s, sx, m, dDA, sCountry, bCondMemo):
@@ -4820,5 +5440,9 @@ def s_vmode_j_indicatif_1 (s, m):
 def c_vmode_après_que_indicatif_1 (s, sx, m, dDA, sCountry, bCondMemo):
     return morph(dDA, (m.start(1), m.group(1)), ":(?:Os|M)", False) and (morphex(dDA, (m.start(2), m.group(2)), ":V.*:S", ":[GI]") or morph(dDA, (m.start(2), m.group(2)), ":V0e.*:S", False))
 def s_vmode_après_que_indicatif_1 (s, m):
+    return suggVerbMode(m.group(2), ":I", m.group(1))
+def c_vmode_quand_lorsque_indicatif_1 (s, sx, m, dDA, sCountry, bCondMemo):
+    return morph(dDA, (m.start(1), m.group(1)), ":(?:Os|M)", False) and (morphex(dDA, (m.start(2), m.group(2)), ":V.*:S", ":[GI]") or morph(dDA, (m.start(2), m.group(2)), ":V0e.*:S", False))
+def s_vmode_quand_lorsque_indicatif_1 (s, m):
     return suggVerbMode(m.group(2), ":I", m.group(1))
 

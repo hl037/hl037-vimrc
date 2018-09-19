@@ -55,63 +55,63 @@ def getVtyp (sVerb):
     return _lVtyp[_dVerb[sVerb][0]]
 
 
-def getSimil (sWord, sMorph, sFilter=None):
+def getSimil (sWord, sMorph, bSubst=False):
     if ":V" not in sMorph:
         return set()
     sInfi = sMorph[1:sMorph.find(" ")]
-    tTags = _getTags(sInfi)
     aSugg = set()
-    if ":Q" in sMorph or ":Y" in sMorph:
-        # we suggest conjugated forms
-        if ":V1" in sMorph:
-            aSugg.add(sInfi)
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":3s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":2p"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":1s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3p"))
-        elif ":V2" in sMorph:
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":1s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":3s"))
-        elif ":V3" in sMorph:
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":1s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":3s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Is", ":1s"))
-            aSugg.add(_getConjWithTags(sInfi, tTags, ":Is", ":3s"))
-        elif ":V0a" in sMorph:
-            aSugg.add("eus")
-            aSugg.add("eut")
+    tTags = _getTags(sInfi)
+    if tTags:
+        if not bSubst:
+            # we suggest conjugated forms
+            if ":V1" in sMorph:
+                aSugg.add(sInfi)
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":3s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":2p"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":1s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3p"))
+            elif ":V2" in sMorph:
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":1s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":3s"))
+            elif ":V3" in sMorph:
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":1s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":3s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Is", ":1s"))
+                aSugg.add(_getConjWithTags(sInfi, tTags, ":Is", ":3s"))
+            elif ":V0a" in sMorph:
+                aSugg.add("eus")
+                aSugg.add("eut")
+            else:
+                aSugg.add("étais")
+                aSugg.add("était")
+            aSugg.discard("")
         else:
-            aSugg.add("étais")
-            aSugg.add("était")
-        aSugg.discard("")
-    else:
-        # we suggest past participles
-        aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q1"))
-        aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q2"))
-        aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q3"))
-        aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q4"))
-        aSugg.discard("")
-        # if there is only one past participle (epi inv), unreliable.
-        if len(aSugg) == 1:
-            aSugg.clear()
-        if ":V1" in sMorph:
-            aSugg.add(sInfi)
+            # we suggest past participles
+            aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q1"))
+            aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q2"))
+            aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q3"))
+            aSugg.add(_getConjWithTags(sInfi, tTags, ":PQ", ":Q4"))
+            aSugg.discard("")
+            # if there is only one past participle (epi inv), unreliable.
+            if len(aSugg) == 1:
+                aSugg.clear()
     return aSugg
 
 
 def getConjSimilInfiV1 (sInfi):
     if sInfi not in _dVerb:
         return set()
-    tTags = _getTags(sInfi)
     aSugg = set()
-    aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":2s"))
-    aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3s"))
-    aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3p"))
-    aSugg.add(_getConjWithTags(sInfi, tTags, ":Is", ":1s"))
-    aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":2p"))
-    aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":2p"))
-    aSugg.discard("")
+    tTags = _getTags(sInfi)
+    if tTags:
+        aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":2s"))
+        aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3s"))
+        aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":3p"))
+        aSugg.add(_getConjWithTags(sInfi, tTags, ":Is", ":1s"))
+        aSugg.add(_getConjWithTags(sInfi, tTags, ":Ip", ":2p"))
+        aSugg.add(_getConjWithTags(sInfi, tTags, ":Iq", ":2p"))
+        aSugg.discard("")
     return aSugg
 
 
@@ -148,32 +148,41 @@ def _modifyStringWithSuffixCode (sWord, sSfx):
 
 
 class Verb ():
-    def __init__ (self, sVerb):
+    def __init__ (self, sVerb, sVerbPattern=""):
+        # conjugate a unknown verb with rules from sVerbPattern
         if not isinstance(sVerb, str):
-            raise TypeError
+            raise TypeError("sVerb should be a string")
         if not sVerb:
-            raise ValueError
+            raise ValueError("Empty string.")
+
+        if sVerbPattern == "":
+            sVerbPattern = sVerb
 
         self.sVerb = sVerb
         self.sVerbAux = ""
-        self._sRawInfo = getVtyp(self.sVerb)
+        self._sRawInfo = getVtyp(sVerbPattern)
         self.sInfo = self._readableInfo()
         self.bProWithEn = (self._sRawInfo[5] == "e")
-        self._tTags = _getTags(sVerb)
+        self._tTags = _getTags(sVerbPattern)
+        if not self._tTags:
+            raise ValueError("Unknown verb.")
         self._tTagsAux = _getTags(self.sVerbAux)
-
+        self.cGroup = self._sRawInfo[0];
         self.dConj = {
             ":Y": {
                 "label": "Infinitif",
-                ":Y": sVerb,
+                ":": sVerb,
             },
-            ":PQ": {
-                "label": "Participes passés et présent",
+            ":P": {
+                "label": "Participe présent",
+                ":": _getConjWithTags(sVerb, self._tTags, ":PQ", ":P"),
+            },
+            ":Q": {
+                "label": "Participes passés",
                 ":Q1": _getConjWithTags(sVerb, self._tTags, ":PQ", ":Q1"),
                 ":Q2": _getConjWithTags(sVerb, self._tTags, ":PQ", ":Q2"),
                 ":Q3": _getConjWithTags(sVerb, self._tTags, ":PQ", ":Q3"),
                 ":Q4": _getConjWithTags(sVerb, self._tTags, ":PQ", ":Q4"),
-                ":P": _getConjWithTags(sVerb, self._tTags, ":PQ", ":P"),
             },
             ":Ip": {
                 "label": "Présent",
@@ -305,19 +314,19 @@ class Verb ():
 
     def participePasse (self, sWho):
         try:
-            return self.dConj[":PQ"][sWho]
+            return self.dConj[":Q"][sWho]
         except:
             traceback.print_exc()
             return "# erreur"
 
     def participePresent (self, bPro, bNeg, bTpsCo, bInt, bFem):
         try:
-            if not self.dConj[":PQ"][":P"]:
+            if not self.dConj[":P"][":"]:
                 return ""
             if bTpsCo:
                 sPartPre = _getConjWithTags(self.sVerbAux, self._tTagsAux, ":PQ", ":P")  if not bPro  else  getConj("être", ":PQ", ":P")
             else:
-                sPartPre = self.dConj[":PQ"][":P"]
+                sPartPre = self.dConj[":P"][":"]
             if not sPartPre:
                 return ""
             bEli = True  if _zStartVoy.search(sPartPre)  else  False
@@ -428,12 +437,12 @@ class Verb ():
     def _seekPpas (self, bPro, bFem, bPlur):
         try:
             if not bPro and self.sVerbAux == "avoir":
-                return self.dConj[":PQ"][":Q1"]
+                return self.dConj[":Q"][":Q1"]
             if not bFem:
-                return self.dConj[":PQ"][":Q2"]  if bPlur and self.dConj[":PQ"][":Q2"]  else  self.dConj[":PQ"][":Q1"]
+                return self.dConj[":Q"][":Q2"]  if bPlur and self.dConj[":Q"][":Q2"]  else  self.dConj[":Q"][":Q1"]
             if not bPlur:
-                return self.dConj[":PQ"][":Q3"]  if self.dConj[":PQ"][":Q3"]  else  self.dConj[":PQ"][":Q1"]
-            return self.dConj[":PQ"][":Q4"]  if self.dConj[":PQ"][":Q4"]  else  self.dConj[":PQ"][":Q1"]
+                return self.dConj[":Q"][":Q3"]  if self.dConj[":Q"][":Q3"]  else  self.dConj[":Q"][":Q1"]
+            return self.dConj[":Q"][":Q4"]  if self.dConj[":Q"][":Q4"]  else  self.dConj[":Q"][":Q1"]
         except:
             traceback.print_exc()
             return "# erreur"
