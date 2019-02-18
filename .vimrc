@@ -73,8 +73,9 @@ if dein#load_state('~/.vim/dein/')
    call dein#add('vim-scripts/L9', {'merged':0})
    "call dein#add('nvie/vim-pep8', {'merged':0})
    call dein#add('scrooloose/syntastic', {'merged':0})
-   call dein#add('bling/vim-airline', {'merged':0})
-   call dein#add('bling/vim-bufferline', {'merged':0})
+   "call dein#add('bling/vim-airline', {'merged':0})
+   "call dein#add('bling/vim-bufferline', {'merged':0})
+   call dein#add('itchyny/lightline.vim', {'merged':0})
    "call dein#add('evidens/vim-twig', {'merged':0})
    call dein#add('Harenome/vim-mipssyntax', {'merged':0})
    call dein#add('yegappan/grep', {'merged':0})
@@ -98,14 +99,20 @@ if dein#load_state('~/.vim/dein/')
 
    """""""""""""""""""""""""""""""""""""
    "Plugin 'me', {'pinned':1 }
-   call dein#add( 'hl037/vim-visualHtml', {'merged': 0})
+   call dein#add('hl037/vim-visualHtml', {'merged': 0})
    """""""""""""""""""""""""""""""""""""
    call dein#add('SirVer/ultisnips', {'merged':0})
 
    """""""""""""""""""""""""""""""""""""
    call dein#add('godlygeek/tabular.git', {'merged':0})
+   
+   call dein#add('tommcdo/vim-kangaroo.git', {'merged':0})
 
    """""""""""""""""""""""""""""""""""""
+   call dein#add('tpope/vim-repeat', {'merged':0})
+   
+   call dein#add('tpope/vim-surround', {'merged':0})
+
 
    " Required:
    call dein#end()
@@ -138,6 +145,10 @@ if !has('nvim')
    map <esc>[1;5D <c-left>
    map <esc>[1;5D <c-Left>
 endif
+
+let g:kangaroo_no_mappings = 1
+nmap <C-Down> <Plug>KangarooPush
+nmap <C-Up> <Plug>KangarooPop
 
 let g:jedi#force_py_version = 3
 let g:jedi#use_splits_not_buffers = "right"
@@ -348,21 +359,28 @@ function ConqueWriteRead(term, str)
 endfunction
 
 
-"let g:user_emmet_settings = {
-"         \  'indentation' : '   ',
-"         \  'perl' : {
-"         \    'aliases' : {
-"         \      'req' : 'require '
-"         \    },
-"         \    'snippets' : {
-"         \      'use' : "use strict\nuse warnings\n\n",
-"         \      'warn' : "warn \"|\";",
-"         D
-"         \    }
-"         \  }
-"         \}
+let g:user_emmet_settings = {
+\ 'html': {
+\   'empty_element_suffix': ' />',
+\   'inline_elements': 'a,li',
+\   'block_elements': 'span',
+\ },
+\ }
 
-let g:airline_powerline_fonts = 1
+""" Lightline conf
+"let g:airline_powerline_fonts = 1
+let g:lightline = {
+      \ 'colorscheme': 'wombat',
+      \ 'component_function': {
+      \   'filename': 'LightLineFilename'
+      \ }
+      \ }
+function! LightLineFilename()
+  return expand('%:p:h')
+endfunction
+
+set noshowmode
+""" END Lightline conf
 
 let g:NERDTreeWinPos = "left"
 map <leader>tt :NERDTree<CR>
@@ -523,4 +541,5 @@ function <SID>Help2Md()
    exec "normal /#\<CR>,\<CR>"
    .,$s/\(.*\)\_s------*/## \1/
 endfunction
+
 

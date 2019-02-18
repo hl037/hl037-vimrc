@@ -125,6 +125,8 @@ highlight DiffDelete cterm=none ctermbg=52
 highlight DiffChange cterm=none ctermbg=17
 highlight DiffText cterm=none ctermbg=bg
 highlight cursorline cterm=None ctermbg=darkblue ctermfg=white guibg=darkblue guifg=white  
+highlight Pmenu ctermbg=017 ctermfg=grey
+highlight PmenuSel ctermbg=021 ctermfg=252
 
 	
 

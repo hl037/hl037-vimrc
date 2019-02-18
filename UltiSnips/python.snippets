@@ -46,6 +46,14 @@ snippet si "self initialization" b
 self.$1 = $1
 endsnippet
 
+snippet = "same equal" i
+$1=$1
+endsnippet
+
+snippet "= " "same equal space" i
+$1 = $1
+endsnippet
+
 snippet s= "self initialization dif" b
 self.$1 = $2
 endsnippet
@@ -196,6 +204,10 @@ snippet nDWAI "nDWAI" b
 nDWAI()
 endsnippet
 
+snippet Dbg "Dbg" b
+Dbg()
+endsnippet
+
 snippet D "D" b
 D($1)
 endsnippet
@@ -214,6 +226,13 @@ snippet ** "**kwargs" i
 **kwargs
 endsnippet
 
+priority 2
+
+snippet *** "*args, **wkargs" i
+*args, **kwargs
+endsnippet
+
+priority 0
 
 snippet flask "Flask app" b
 
@@ -228,7 +247,6 @@ ${1:app} = Flask('$2')
 endsnippet
 
 snippet route "@app.route"
-
 @${1:app}.route('$2'$3)
 def $4($5):
 	"""
