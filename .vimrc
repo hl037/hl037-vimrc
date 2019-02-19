@@ -49,75 +49,61 @@ if &compatible
   set nocompatible               " Be iMproved
 endif
 
-" Required:
-set runtimepath+=~/.vim/dein/repos/github.com/Shougo/dein.vim
 
-" Required:
-if dein#load_state('~/.vim/dein/')
-   call dein#begin('~/.vim/dein/')
+call plug#begin('~/.vim/plugged')
 
-   " Let dein manage dein
-   " Required:
-   call dein#add('~/.vim/dein/repos/github.com/Shougo/dein.vim')
+Plug '~/.vim/me/hl037report'
 
-   " You can specify revision/branch/tag.
-   call dein#add('Shougo/vimshell', {'merged':0})
-   call dein#add('Shougo/vimproc.vim', {'build' : 'make', 'merged':0})
-   call dein#add('tpope/vim-abolish', {'merged':0})
-   call dein#add('kien/ctrlp.vim', {'merged':0})
-   call dein#add('vim-scripts/Emmet.vim', {'merged':0})
-   call dein#add('scrooloose/nerdtree', {'merged':0})
-   call dein#add('unkiwii/vim-nerdtree-sync', {'merged':0})
-   call dein#add('/usr/share/vim/vimfiles', {'merged':0})
-   call dein#add('junegunn/fzf.vim', {'merged':0})
-   call dein#add('vim-scripts/L9', {'merged':0})
-   "call dein#add('nvie/vim-pep8', {'merged':0})
-   call dein#add('scrooloose/syntastic', {'merged':0})
-   "call dein#add('bling/vim-airline', {'merged':0})
-   "call dein#add('bling/vim-bufferline', {'merged':0})
-   call dein#add('itchyny/lightline.vim', {'merged':0})
-   "call dein#add('evidens/vim-twig', {'merged':0})
-   call dein#add('Harenome/vim-mipssyntax', {'merged':0})
-   call dein#add('yegappan/grep', {'merged':0})
-   "call dein#add('ternjs/tern_for_vim', {'merged':0, 'on_ft':'javascript'})
-   call dein#add('Valloric/YouCompleteMe', {'merged':0, 'on_ft':['javascript', 'vue']})
-   call dein#add('posva/vim-vue', {'merged':0})
-   call dein#add('dpelle/vim-Grammalecte', {'merged':0})
-   call dein#add('xolox/vim-misc', {'merged':0})
-   call dein#add('xolox/vim-lua-ftplugin', {'merged':0, 'on_ft': 'lua'})
+Plug 'Shougo/vimshell'
+Plug 'Shougo/vimproc.vim', {'do' : 'make', 'merged':0}
+Plug 'tpope/vim-abolish'
+Plug 'kien/ctrlp.vim'
+Plug 'vim-scripts/Emmet.vim'
+Plug 'scrooloose/nerdtree'
+Plug 'unkiwii/vim-nerdtree-sync'
+Plug '/usr/share/vim/vimfiles'
+Plug 'junegunn/fzf.vim'
+Plug 'vim-scripts/L9'
+"Plug 'nvie/vim-pep8'
+Plug 'scrooloose/syntastic'
+"Plug 'bling/vim-airline'
+"Plug 'bling/vim-bufferline'
+Plug 'itchyny/lightline.vim'
+"Plug 'evidens/vim-twig'
+Plug 'Harenome/vim-mipssyntax'
+Plug 'yegappan/grep'
+"Plug 'ternjs/tern_for_vim', 'for':'javascript'
+Plug 'Valloric/YouCompleteMe', {'for':['javascript', 'vue']}
+Plug 'posva/vim-vue'
+Plug 'dpelle/vim-Grammalecte'
+Plug 'xolox/vim-misc'
+Plug 'xolox/vim-lua-ftplugin', {'for': 'lua'}
 
-   call dein#add('lervag/vimtex', {'merged':0, 'on_ft':['latex', 'tex']})
-   call dein#add('wesQ3/vim-windowswap', {'merged':0})
-   call dein#add('kana/vim-textobj-user', {'merged':0})
-   call dein#add('bps/vim-textobj-python', {'merged':0, 'on_ft':'javascript'})
-   call dein#add('dbakker/vim-paragraph-motion', {'merged':0})
+Plug 'lervag/vimtex', {'for':['latex', 'tex']}
+Plug 'wesQ3/vim-windowswap'
+Plug 'kana/vim-textobj-user'
+Plug 'bps/vim-textobj-python', {'for':'javascript'}
+Plug 'dbakker/vim-paragraph-motion'
 
    """""""""""""""""""""""""""""""""""""
-   call dein#add('davidhalter/jedi-vim', {'merged':0, 'on_ft':'python'})
-   "call dein#add('python-mode/python-mode', {'merged':0})
-   "
+Plug 'davidhalter/jedi-vim', {'for':'python'}
+"Plug 'python-mode/python-mode'
+"Plugin 'me', {'pinned':1 
+"Plug 'hl037/vim-visualHtml', {'merged': 0
+"""""""""""""""""""""""""""""""""""""
+Plug 'SirVer/ultisnips'
 
    """""""""""""""""""""""""""""""""""""
-   "Plugin 'me', {'pinned':1 }
-   call dein#add('hl037/vim-visualHtml', {'merged': 0})
-   """""""""""""""""""""""""""""""""""""
-   call dein#add('SirVer/ultisnips', {'merged':0})
-
-   """""""""""""""""""""""""""""""""""""
-   call dein#add('godlygeek/tabular.git', {'merged':0})
+Plug 'godlygeek/tabular'
    
-   call dein#add('tommcdo/vim-kangaroo.git', {'merged':0})
+Plug 'tommcdo/vim-kangaroo'
 
    """""""""""""""""""""""""""""""""""""
-   call dein#add('tpope/vim-repeat', {'merged':0})
+Plug 'tpope/vim-repeat'
    
-   call dein#add('tpope/vim-surround', {'merged':0})
+Plug 'tpope/vim-surround'
 
-
-   " Required:
-   call dein#end()
-   call dein#save_state()
-endif
+call plug#end()
 
 source ~/.vim/supercontrol.vim
 
