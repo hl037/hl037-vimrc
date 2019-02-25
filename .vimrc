@@ -50,7 +50,7 @@ if &compatible
 endif
 
 
-call plug#begin('~/.vim/plugged')
+call plug#begin('~/.cache/vim/plugged')
 
 Plug '~/.vim/me/hl037report'
 
