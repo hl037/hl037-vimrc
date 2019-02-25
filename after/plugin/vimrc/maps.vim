@@ -68,7 +68,6 @@ set mat=2
 set noerrorbells
 set novisualbell
 set t_vb=
-set tm=500
 
 " Set number active
 set nu
@@ -342,4 +341,12 @@ endif
    
 " The expected behaviour
 nmap Y y$
+
+nmap <Leader>o :!open "%"<cr><cr>
+
+
+" no timeout for ambiguous maps
+set timeoutlen=0
+set nottimeout
+set ttimeoutlen=0
 

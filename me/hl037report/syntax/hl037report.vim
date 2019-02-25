@@ -7,12 +7,13 @@ syn keyword _037RTodo todo
 syn case match
 
 syn match _037RTitle /\v^\s*(\d|\w|\.)+\).*$/
-syn match _037RWarning /\v^\s*!.*$/
-syn match _037RImportant /\v^\s*\*.*$/
-syn match _037RQuestion /\v^\s*\?.*$/
-syn match _037RImpQuestion /\v^\s*!\?.*$/
-syn match _037RResponse /\v^\s*-\>.*$/
-syn match _037RImpResponse /\v^\s*!\s-\>.*$/
+syn match _037RWarning /\v^\s*\zs!.*$/
+syn match _037RImportant /\v^\s*\zs\*.*$/
+syn match _037RQuestion /\v^\s*\zs\?.*$/
+syn match _037RImpQuestion /\v^\s*\zs!\?.*$/
+syn match _037RResponse /\v^\s*\zs-\>.*$/
+syn match _037RImpResponse /\v^\s*\zs!\s?-\>.*$/
+syn region _037RCode start='`' end='`' 
 
 
 hi link _037RTodo Todo
@@ -23,5 +24,6 @@ hi link _037RQuestion Question
 hi link _037RImpQuestion Question
 hi link _037RResponse Response
 hi link _037RImpResponse Response
+hi link _037RCode String
 
 let b:current_syntax = "hl037report"

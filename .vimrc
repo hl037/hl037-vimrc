@@ -103,9 +103,13 @@ Plug 'tpope/vim-repeat'
    
 Plug 'tpope/vim-surround'
 
+Plug 'senderle/restoreview'
+
 call plug#end()
 
 source ~/.vim/supercontrol.vim
+
+set vdir=~/.vim/view/
 
 " Required:
 filetype plugin indent on
