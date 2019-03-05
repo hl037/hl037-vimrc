@@ -5,6 +5,9 @@
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
+"
+
+
 let mapleader = ","
 let g:mapleader = ","
 
@@ -346,7 +349,7 @@ nmap <Leader>o :!open "%"<cr><cr>
 
 
 " no timeout for ambiguous maps
-set timeoutlen=0
-set nottimeout
-set ttimeoutlen=0
+"set timeoutlen=0
+"set nottimeout
+"set ttimeoutlen=0
 
