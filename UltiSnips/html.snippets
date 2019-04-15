@@ -1,14 +1,14 @@
 extends css, javascript
 
-snippet <button "button"
+snippet <button "button" i
 <button ${2:id="$3"} type="${1:button}">$0</button>
 endsnippet
 
-snippet <label "label"
+snippet <label "label" i
 <label for="$1">$0</label>
 endsnippet
 
-snippet <input
+snippet <input "input" i
 <input ${1:id="${2:text}"} type="$1" />$0
 endsnippet
 
@@ -28,11 +28,38 @@ snippet input "input" w
 input[type=${1:text}]$0
 endsnippet
 
-snippet <texta
+snippet <texta "textarea" i
 <textarea ${1:id="$2"}>$0</textarea>
 endsnippet
 
-snippet br
+snippet br "br" w
 <br/>
 endsnippet
 
+snippet c "class" w
+class="$1"
+endsnippet
+
+snippet i "id" w
+id="$1"
+endsnippet
+
+snippet n "name" w
+name="$1"
+endsnippet
+
+snippet f "for" w
+for="$1"
+endsnippet
+
+snippet r "for" w
+rows="$1"
+endsnippet
+
+snippet co "for" w
+cols="$1"
+endsnippet
+
+snippet = "attr" i
+="$1"
+endsnippet
