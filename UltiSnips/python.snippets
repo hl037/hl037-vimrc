@@ -270,3 +270,19 @@ endsnippet
 snippet NI "raise NotImplementedError" b
 raise NotImplementedError
 endsnippet
+
+
+snippet mod "Model" b
+@export
+class $1(ModelA):
+	__tablename_suffix__ = '$1'
+	
+	id = sa.Column(Types.Int, primary_key = True)
+	$0
+endsnippet
+
+snippet col "Col" b
+$1 = sa.Column(Types.$2, ${3:index = True})
+endsnippet
+
+
