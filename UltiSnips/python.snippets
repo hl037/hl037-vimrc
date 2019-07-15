@@ -161,6 +161,22 @@ snippet l "lambda" w
 lambda $1: $2
 endsnippet
 
+snippet test "test case" b
+import unittest as ut
+
+class Test$1(ut.TestCase):
+	"""
+	Test $1 $2
+	"""
+	
+	def setUp(self):
+		${3:pass}
+	
+	def tearDown(self):
+		${4:pass}
+	$0
+endsnippet
+
 snippet clt "Test case" b
 class Test$1(ut.TestCase):
 	"""
@@ -182,6 +198,10 @@ endsnippet
 
 snippet Dbug "import dbug" b
 from dbug import *
+endsnippet
+
+snippet ipdb "ipdb breakpoint" 
+import ipdb; ipdb.set_trace()
 endsnippet
 
 snippet Dvar "Dvar" b
@@ -228,7 +248,7 @@ endsnippet
 
 priority 2
 
-snippet *** "*args, **wkargs" i
+snippet *** "*args, **kwargs" i
 *args, **kwargs
 endsnippet
 
@@ -274,10 +294,10 @@ endsnippet
 
 snippet mod "Model" b
 @export
-class $1(ModelA):
+class $1(PrefixerBase):
 	__tablename_suffix__ = '$1'
 	
-	id = sa.Column(Types.Int, primary_key = True)
+	id = sa.Column(Types.Id, primary_key = True)
 	$0
 endsnippet
 
@@ -286,3 +306,39 @@ $1 = sa.Column(Types.$2, ${3:index = True})
 endsnippet
 
 
+snippet cli "Click cli" b
+import click
+
+
+@click.group()
+def main():
+	pass
+
+@main.command(name="$1")
+def $1():
+	$2
+
+if __name__ == "__main__" :
+	main()
+
+endsnippet
+
+snippet cmd "Click cmd" b
+@$1.command(name='$2')
+def $2():
+	$3
+endsnippet
+
+snippet arg "Click argument" b
+@click.argument('$1')
+endsnippet
+
+snippet opt "Click opt" b
+@click.option('--$1', '-$2', type=${3:str})
+endsnippet
+
+snippet gr "Click groupe" b
+@$1.group()
+def $2():
+	pass
+endsnippet

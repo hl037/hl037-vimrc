@@ -50,6 +50,18 @@ if &compatible
 endif
 
 
+function! BuildYCM(info)
+  " info is a dictionary with 3 fields
+  " - name:   name of the plugin
+  " - status: 'installed', 'updated', or 'unchanged'
+  " - force:  set on PlugInstall! or PlugUpdate!
+  if a:info.status == 'installed' || a:info.force
+    !./install.py
+  endif
+endfunction
+
+
+
 call plug#begin('~/.cache/vim/plugged')
 
 Plug '~/.vim/me/hl037report'
@@ -73,7 +85,7 @@ Plug 'itchyny/lightline.vim'
 Plug 'Harenome/vim-mipssyntax'
 Plug 'yegappan/grep'
 "Plug 'ternjs/tern_for_vim', 'for':'javascript'
-Plug 'Valloric/YouCompleteMe', {'for':['javascript', 'vue']}
+Plug 'Valloric/YouCompleteMe', {'do':function('BuildYCM') , 'for':['javascript', 'vue']}
 Plug 'posva/vim-vue'
 Plug 'dpelle/vim-Grammalecte'
 Plug 'xolox/vim-misc'
@@ -158,6 +170,7 @@ let g:UltiSnipsSnippetsDir = '~/.vim/UltiSnips'
 inoremap <c-x><c-k> <c-x><c-k>
 
 let g:NERDTreeMouseMode = 3
+
 
 " Start autocompletion after 4 chars
 let g:ycm_min_num_of_chars_for_completion = 3
