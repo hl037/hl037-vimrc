@@ -1,41 +1,48 @@
 
+
 snippet m "class method" b
 def $1(self$2):
-  $3
+	$3
 endsnippet
 
 snippet m_ "class magical method" b
 def __$1__(self$2):
-  $3
+	$3
 endsnippet
 
 snippet sm "static class method" b
 @staticmethod
 def $1($2):
-  $3
+	$3
 endsnippet
 
 snippet sm_ "static magic method" b
 @staticmethod
 def __$1__(cls$2):
-  $3
+	$3
 endsnippet
 
 snippet cm "class class method" b
 @classmethod
 def $1(cls$2):
-  $3
+	$3
 endsnippet
 
 snippet cm_ "class magic method" b
 @classmethod
 def __$1__(cls$2):
-  $3
+	$3
+endsnippet
+
+snippet prop "Property" b
+@property
+def $1(self):
+	$2
 endsnippet
 
 snippet f "function" b
 def $1($2):
-  $3
+	$3
 endsnippet
 
 snippet s. "self." 
@@ -72,11 +79,11 @@ endsnippet
 
 snippet cl "class (object):" b
 class $1(${2:object}):
-  """
-  $3
-  """
-  def __init__(self$4):
-    $5
+	"""
+	$3
+	"""
+	def __init__(self$4):
+		$5
 endsnippet
 
 snippet cle "class (RuntimeError)" b
@@ -157,7 +164,7 @@ except $2:
 	$3
 endsnippet
 
-snippet l "lambda" w
+snippet 'l ' "lambda" r
 lambda $1: $2
 endsnippet
 
@@ -200,8 +207,8 @@ snippet Dbug "import dbug" b
 from dbug import *
 endsnippet
 
-snippet ipdb "ipdb breakpoint" 
-import ipdb; ipdb.set_trace()
+snippet b "breakpoint" 
+breakpoint()
 endsnippet
 
 snippet Dvar "Dvar" b
@@ -342,3 +349,80 @@ snippet gr "Click groupe" b
 def $2():
 	pass
 endsnippet
+
+
+
+snippet yn "Yagflow node" b
+{
+	"name" : "$1",
+	"type" : "$2",
+	"conf" : {
+		$3
+	},
+	"input" : {
+		$4
+	}
+},
+$0
+endsnippet
+
+snippet yi "Yagflow node input" b
+"$1" : {
+	"node" : "$2",
+	"port" : "$3",
+},$0
+endsnippet
+
+snippet df "dict field" b
+"$1" : $2,$0
+endsnippet
+
+
+snippet ### "### Title ###"
+`!p
+l = len(t[1])
+v1 = (78 // 2 - l // 2)
+snip.rv = '#' * v1
+` $1 `!p
+snip.rv = '#' * (78 - v1 - l)
+`
+endsnippet
+
+snippet "^(?P<start>((.*)\D)?)(?P<n>\d+)(?P<top>.*),(?P<left>.*),(?P<right>.*),(?P<bottom>.*)(?P<type>\#|\~)" "Generic title" br
+`!p
+m = match
+start = m['start']
+l1 = len(start)
+n = int(m['n'])
+r = n - l1
+snip.rv = '\n'.join( (start + (c * r)) for c in m['top'] )
+# snip.rv = start
+`
+`!p
+l = len(t[1])
+v1 = ((r-2) // 2 - l // 2)
+if m['type'] == '#':
+	snip.rv = start + (m['left'] or ' ') * v1
+else:
+	snip.rv = start + m['left'] + ' ' * (v1 - len(m['left']))
+` $1 `!p
+v2 = ((r-2) - v1 - l)
+if m['type'] == '#':
+	snip.rv = (m['right'] or ' ') * v2
+else:
+	snip.rv = ' ' * (v2 - len(m['right'])) + m['right']
+`
+`!p
+snip.rv = '\n'.join( (start + c * r) for c in m['bottom'] )
+`
+endsnippet
+
+snippet xpm "post mortem" b
+import pdb; pdb.xpm()
+endsnippet
+
+snippet main "main function" b
+if __name__ == "__main__":
+	${1:main()}
+endsnippet
+

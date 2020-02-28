@@ -1,1 +1,1 @@
-after/plugin/vimrc/maps.vim
+after/plugin/vimrc/00-maps.vim
