@@ -1,6 +1,7 @@
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General
+" /!\ SEE AFTER/PLUGIN/VIMRC/MAPS.VIM
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " With a map leader it's possible to do extra key combinations
@@ -13,6 +14,10 @@ let g:mapleader = ","
 
 
 map <c-c> <esc>
+imap <c-c> <esc>
+vmap <c-c> <esc>
+smap <c-c> <esc>
+tnoremap <m-c> <c-\><c-n>
 nnoremap <return> o<space><bs><esc>
 
 " Fast saving
@@ -130,6 +135,11 @@ highlight cursorline cterm=None ctermbg=darkblue ctermfg=white guibg=darkblue gu
 highlight Pmenu ctermbg=017 ctermfg=grey
 highlight PmenuSel ctermbg=021 ctermfg=252
 
+" better readibility
+hi clear Search
+hi Search NONE
+hi Search ctermfg=black ctermbg=105
+
 	
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -151,8 +161,8 @@ set expandtab
 set smarttab
 
 " 1 tab == 3 spaces
-set shiftwidth=3
-set tabstop=3
+set shiftwidth=2
+set tabstop=2
 
 " Linebreak on 500 characters
 set lbr
@@ -347,6 +357,7 @@ nmap Y y$
 
 nmap <Leader>o :!open "%"<cr><cr>
 
+"map <C-LeftMouse> <LeftMouse><leader>g
 
 " no timeout for ambiguous maps
 "set timeoutlen=0

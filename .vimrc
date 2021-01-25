@@ -66,7 +66,8 @@ call plug#begin('~/.cache/vim/plugged')
 
 Plug '~/.vim/me/hl037report'
 
-Plug 'Shougo/vimshell'
+"Plug 'Shougo/vimshell'
+Plug 'Shougo/deol.nvim'
 Plug 'Shougo/vimproc.vim', {'do' : 'make', 'merged':0}
 Plug 'tpope/vim-abolish'
 Plug 'kien/ctrlp.vim'
@@ -85,7 +86,7 @@ Plug 'itchyny/lightline.vim'
 Plug 'Harenome/vim-mipssyntax'
 Plug 'yegappan/grep'
 "Plug 'ternjs/tern_for_vim', 'for':'javascript'
-Plug 'Valloric/YouCompleteMe', {'do':function('BuildYCM') , 'for':['javascript', 'vue']}
+"Plug 'Valloric/YouCompleteMe', {'do':function('BuildYCM') , 'for':['javascript', 'vue']}
 Plug 'posva/vim-vue'
 Plug 'dpelle/vim-Grammalecte'
 Plug 'xolox/vim-misc'
@@ -95,6 +96,7 @@ Plug 'lervag/vimtex', {'for':['latex', 'tex']}
 Plug 'wesQ3/vim-windowswap'
 Plug 'kana/vim-textobj-user'
 Plug 'bps/vim-textobj-python', {'for':'javascript'}
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'dbakker/vim-paragraph-motion'
 
    """""""""""""""""""""""""""""""""""""
@@ -107,16 +109,15 @@ Plug 'SirVer/ultisnips'
 
    """""""""""""""""""""""""""""""""""""
 Plug 'godlygeek/tabular'
-   
 Plug 'tommcdo/vim-kangaroo'
 
    """""""""""""""""""""""""""""""""""""
 Plug 'tpope/vim-repeat'
-   
 Plug 'tpope/vim-surround'
-
 Plug 'senderle/restoreview'
 Plug 'AndrewRadev/sideways.vim'
+   """""""""""""""""""""""""""""""""""""
+Plug 'Yggdroot/indentLine'
 
 call plug#end()
 
@@ -129,32 +130,42 @@ filetype plugin indent on
 syntax enable
 
 if !has('nvim')
-   set ttymouse=sgr
-   set clipboard+=unnamedplus
-   map <esc>OA <up>
-   map <esc>OA <Up>
-   map <esc>OB <down>
-   map <esc>OB <Down>
-   map <esc>OC <right>
-   map <esc>OC <Right>
-   map <esc>OD <left>
-   map <esc>OD <Left>
-   map <esc>[1;5A <c-up>
-   map <esc>[1;5A <c-Up>
-   map <esc>[1;5B <c-down>
-   map <esc>[1;5B <c-Down>
-   map <esc>[1;5C <c-right>
-   map <esc>[1;5C <c-Right>
-   map <esc>[1;5D <c-left>
-   map <esc>[1;5D <c-Left>
+  set ttymouse=sgr
+  set clipboard+=unnamedplus
+  map <esc>OA <up>
+  map <esc>OA <Up>
+  map <esc>OB <down>
+  map <esc>OB <Down>
+  map <esc>OC <right>
+  map <esc>OC <Right>
+  map <esc>OD <left>
+  map <esc>OD <Left>
+  map <esc>[1;5A <c-up>
+  map <esc>[1;5A <c-Up>
+  map <esc>[1;5B <c-down>
+  map <esc>[1;5B <c-Down>
+  map <esc>[1;5C <c-right>
+  map <esc>[1;5C <c-Right>
+  map <esc>[1;5D <c-left>
+  map <esc>[1;5D <c-Left>
 endif
+
+
+" Indent line
+
+let g:indentLine_char_list = ['┃', '┇', '│', '┆', '┊', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷']
+let g:indentLine_color_term = 233
+
+" Sideways
+nnoremap <M-h> :SidewaysLeft<cr>
+nnoremap <M-l> :SidewaysRight<cr>
 
 let g:kangaroo_no_mappings = 1
 nmap <C-Down> <Plug>KangarooPush
 nmap <C-Up> <Plug>KangarooPop
 
 let g:jedi#force_py_version = 3
-let g:jedi#use_splits_not_buffers = "right"
+let g:jedi#use_splits_not_buffers = ""
 let g:jedi#show_call_signatures = 2
 let g:jedi#goto_command = "<leader>f"
 let g:jedi#goto_assignments_command = "<leader>a"
@@ -359,8 +370,8 @@ map <leader>te :call ConqueWriteRead(my_term, getline('.'))<CR>
 map <leader>tr :call my_term.read()<CR>
 
 function ConqueWriteRead(term, str)
-   call a:term.writeln(a:str)
-   call a:term.read()
+  call a:term.writeln(a:str)
+  call a:term.read()
 endfunction
 
 
@@ -472,6 +483,7 @@ set ut=4000
 let g:visualHtml#active = 0
 let g:visualHtml#live = 0
 
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -522,37 +534,44 @@ endfunction
 " Don't close window, when deleting a buffer
 command! Bclose call <SID>BufcloseCloseIt()
 function! <SID>BufcloseCloseIt()
-   let l:currentBufNum = bufnr("%")
-   let l:alternateBufNum = bufnr("#")
+  let l:currentBufNum = bufnr("%")
+  let l:alternateBufNum = bufnr("#")
 
-   if buflisted(l:alternateBufNum)
-     buffer #
-   else
-     bnext
-   endif
+  if buflisted(l:alternateBufNum)
+    buffer #
+  else
+    bnext
+  endif
 
-   if bufnr("%") == l:currentBufNum
-     new
-   endif
+  if bufnr("%") == l:currentBufNum
+    new
+  endif
 
-   if buflisted(l:currentBufNum)
-     execute("bdelete! ".l:currentBufNum)
-   endif
+  if buflisted(l:currentBufNum)
+    execute("bdelete! ".l:currentBufNum)
+  endif
 endfunction
 
 " to translate my help files in Markdown
 command! Help2Md call <SID>Help2Md()
 function <SID>Help2Md()
-   %s/^ \*.*\*\s*\n//
-   %s/^ \*.*\*\s*/    /
-   %s/^ \a/   \0/
-   %s/\s*\*.*\*\s*//g
-   %s/\.\.\.\..*//g
-   %s/=\+\_s\(\d\+\.\)\s*\(.*\)\_s-\+/# \1 \2/g
-   exec 'normal gg2dd/====' . "\<CR>" . 'kVgg:normal 4I ' . "\<CR>" . ",\<CR>"
-   '<,'>s/\~$//
-   exec "normal /#\<CR>,\<CR>"
-   .,$s/\(.*\)\_s------*/## \1/
+  %s/^ \*.*\*\s*\n//
+  %s/^ \*.*\*\s*/    /
+  %s/^ \a/   \0/
+  %s/\s*\*.*\*\s*//g
+  %s/\.\.\.\..*//g
+  %s/=\+\_s\(\d\+\.\)\s*\(.*\)\_s-\+/# \1 \2/g
+  exec 'normal gg2dd/====' . "\<CR>" . 'kVgg:normal 4I ' . "\<CR>" . ",\<CR>"
+  '<,'>s/\~$//
+  exec "normal /#\<CR>,\<CR>"
+  .,$s/\(.*\)\_s------*/## \1/
 endfunction
 
+command! SynGroup call <SID>SynGroup()
+function! <SID>SynGroup()
+  if !exists("*synstack")
+    return
+  endif
+  echo map(synstack(line('.'), col('.')), 'synIDattr(v:val, "name")')
+endfunc
 

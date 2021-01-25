@@ -1,4 +1,4 @@
-runtime! 'after/ftplugin/javascript.vim'
+runtime! after/ftplugin/javascript.vim
 
 set shiftwidth=2
 set tabstop=2
