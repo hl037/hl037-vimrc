@@ -204,6 +204,10 @@ snippet ipdb "ipdb breakpoint"
 import ipdb; ipdb.set_trace()
 endsnippet
 
+snippet b "breakpoint" b
+breakpoint()
+endsnippet
+
 snippet Dvar "Dvar" b
 Dvar(r"""$1"""$2)
 endsnippet
@@ -324,8 +328,17 @@ if __name__ == "__main__" :
 endsnippet
 
 snippet cmd "Click cmd" b
-@$1.command(name='$2')
-def $2():
+`!p
+r = re.compile(r'-(\w)')
+if t[1] != 'main':
+	camel = t[1]
+	suffix = t[2].capitalize()
+else :
+	camel = ''
+	suffix = t[2]
+camel+=r.sub(lambda m:m[1].upper(), suffix)
+`@$1.command(name='$2')
+def `!p snip.rv=camel`():
 	$3
 endsnippet
 
@@ -337,8 +350,14 @@ snippet opt "Click opt" b
 @click.option('--$1', '-$2', type=${3:str})
 endsnippet
 
-snippet gr "Click groupe" b
+snippet gr "Click group" b
 @$1.group()
 def $2():
 	pass
 endsnippet
+
+snippet pm "Post mortem debug"
+import pdb; pdb.xpm()
+endsnippet	
+
+

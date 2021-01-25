@@ -353,3 +353,7 @@ nmap <Leader>o :!open "%"<cr><cr>
 "set nottimeout
 "set ttimeoutlen=0
 
+" Quick copy paste all file
+nmap <leader><leader>y gg"+yG<c-o>
+nmap <leader><leader>p ggdG"+PG
+

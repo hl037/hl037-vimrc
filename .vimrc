@@ -116,6 +116,7 @@ Plug 'tpope/vim-repeat'
 Plug 'tpope/vim-surround'
 
 Plug 'senderle/restoreview'
+Plug 'AndrewRadev/sideways.vim'
 
 call plug#end()
 
@@ -308,6 +309,7 @@ xnoremap <tab> :Tabularize /
 
 
 map <c-c> <esc><esc>
+smap <c-c> <esc><esc>
 imap <c-c> <esc><esc>
 nnoremap <return> o <bs><esc>
 
@@ -452,6 +454,14 @@ inoremap <expr> <M-,> pumvisible() ? '<C-n>' :
   \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
 
 inoremap <Nul> <c-x><c-o>
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Sideways
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+nnoremap <M-l> :SidewaysRight<cr>
+nnoremap <M-h> :SidewaysLeft<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => visualHtml
