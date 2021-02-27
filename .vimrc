@@ -96,7 +96,7 @@ Plug 'lervag/vimtex', {'for':['latex', 'tex']}
 Plug 'wesQ3/vim-windowswap'
 Plug 'kana/vim-textobj-user'
 Plug 'bps/vim-textobj-python', {'for':'javascript'}
-Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'neoclide/coc.nvim', {'branch': 'release', 'for':['javascript', 'vue', 'typescript']}
 Plug 'dbakker/vim-paragraph-motion'
 
    """""""""""""""""""""""""""""""""""""
@@ -179,6 +179,7 @@ let g:jedi#rename_command = "<leader>r"
 
 let g:UltiSnipsEditSplit = 'vertical'
 let g:UltiSnipsSnippetsDir = '~/.vim/UltiSnips'
+let g:UltiSnipsSnippetStorageDirectoryForUltiSnipsEdit= '~/.vim/UltiSnips'
 inoremap <c-x><c-k> <c-x><c-k>
 
 let g:NERDTreeMouseMode = 3
