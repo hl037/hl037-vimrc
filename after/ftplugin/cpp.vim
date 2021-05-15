@@ -27,3 +27,12 @@ vnoremap <leader>cg :norm <leader>cg<CR>
 
 nnoremap <leader>cs :VarSetterConstRef<CR>
 vnoremap <leader>cs :norm <leader>cs<CR>
+
+
+set shiftwidth=2
+set tabstop=2
+set expandtab
+
+runtime! coc_maps.vim
+
+set cinoptions=L0

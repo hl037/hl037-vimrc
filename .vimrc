@@ -96,7 +96,7 @@ Plug 'lervag/vimtex', {'for':['latex', 'tex']}
 Plug 'wesQ3/vim-windowswap'
 Plug 'kana/vim-textobj-user'
 Plug 'bps/vim-textobj-python', {'for':'javascript'}
-Plug 'neoclide/coc.nvim', {'branch': 'release', 'for':['javascript', 'vue', 'typescript']}
+Plug 'neoclide/coc.nvim', {'branch': 'release', 'for':['javascript', 'vue', 'typescript', 'cpp', 'c']}
 Plug 'dbakker/vim-paragraph-motion'
 
    """""""""""""""""""""""""""""""""""""
@@ -234,10 +234,10 @@ let g:fzf_colors = {
   \ 'spinner': ['fg', 'Label'],
   \ 'header':  ['fg', 'Comment'] }
 
-imap <c-right> <c-i>
-imap <c-left> <c-o>
-nmap <c-right> <c-i>
-nmap <c-left> <c-o>
+inoremap <c-right> <c-i>
+inoremap <c-left> <c-o>
+nnoremap <c-right> <c-i>
+nnoremap <c-left> <c-o>
 
 let g:pymode_trim_whitespaces = 0
 let g:pymode_options = 0

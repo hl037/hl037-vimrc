@@ -1,4 +1,5 @@
 
+priority 0
 
 snippet m "class method" b
 def $1(self$2):
@@ -63,17 +64,33 @@ snippet si "self initialization" b
 self.$1 = $1
 endsnippet
 
-snippet sup "super()" b
+
+snippet "\.\=" "variable initialisation" r
+.$2 = $2
+endsnippet
+
+
+snippet "\['\=" "array initialization" r
+['$1'] = $1
+endsnippet
+
+snippet '\["\=' "array initialization 2" r 
+["$1"] = $1
+endsnippet
+
+snippet sup "super()"
 super()
 endsnippet
 
-snippet supi "super().__init__()" b
+snippet supi "super().__init__()"
 super().__init__($1)
 endsnippet
 
 snippet s "self"
 self
 endsnippet
+
+priority -1
 
 snippet = "same equal" i
 $1=$1
@@ -82,6 +99,8 @@ endsnippet
 snippet "= " "same equal space" i
 $1 = $1
 endsnippet
+
+priority 0
 
 snippet s= "self initialization dif" b
 self.$1 = $2
@@ -485,4 +504,56 @@ snippet main "main function" b
 if __name__ == "__main__":
 	${1:main()}
 endsnippet
+
+# CopyCall
+
+snippet ccf "Copycall field" b
+('$1', $2),
+endsnippet
+
+snippet ccS "Copycall Struct" b
+class $1(Struct):
+	_fields_ = [
+		$2
+	]
+endsnippet
+
+snippet ccU "Copycall Struct" b
+class $1(Union):
+	_fields_ = [
+		$2
+	]
+endsnippet
+
+snippet ccP "Copycall Packet" b
+@$1.packet(**peerArgs('$2'))
+class $3(Struct):
+	_fields_ = [
+		$4
+	]
+endsnippet	
+
+snippet ccF "Copycall Function" b
+class $1(Function, copycall=$2):
+	_res_ = ${3:None}
+	_args_ = [
+		$4
+	]
+endsnippet
+
+snippet ccCh "Copycall Chunks" b
+_in_chunks_ = [
+	$1
+]
+_out_chunks_ = [
+	$2
+]
+endsnippet
+
+snippet ccsi "Copycall size info"
+_size_info_list_ = [
+	$1
+]
+endsnippet
+
 

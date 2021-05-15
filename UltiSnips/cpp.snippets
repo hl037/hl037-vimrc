@@ -16,22 +16,95 @@ snippet i" "include <" b
 #include "$1"$0
 endsnippet
 
+snippet "#i " "#include" brA
+#include 
+endsnippet
+
+snippet "#i<" "include <" brA
+#include <$1>$0
+endsnippet
+
+snippet '#i"' "include <" brA
+#include "$1"$0
+endsnippet
+
+snippet "#d " "#define" brA
+#define $1 $2
+endsnippet
+
+snippet "#if " "#if" brA
+#if $1
+$2
+#endif
+endsnippet
+
+snippet "#ifd " "#ifdef" brA
+#ifdef $1
+$2
+#endif
+endsnippet
+
+snippet "#id " "#ifdef" brA
+#ifdef $1
+$2
+#endif
+endsnippet
+
+snippet "#ifnd " "#ifndef" brA
+#ifndef $1
+$2
+#endif
+endsnippet
+
+snippet "#ind " "#ifndef" brA
+#ifndef $1
+$2
+#endif
+endsnippet
+
+snippet "#e " "#else" brA
+#else
+$0
+endsnippet
+
+snippet "#ei " "#else if" brA
+#elif $1
+$0
+endsnippet
+
 snippet main "main" b
-int main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]){
 	$0
 	return 0;
 }
 endsnippet	
 
 snippet cl "class" b
-class $1 $0
-{
+class $1{
 public:
 	$1();
 	~$1();
+	$2
 };
 
+endsnippet
+
+snippet s "struct" b
+struct $1{
+	$2
+};
+endsnippet
+
+snippet u "union" b
+union $1{
+	$2
+};
+endsnippet
+
+snippet e "enum" b
+enum $1{
+	$2
+};
 endsnippet
 
 
@@ -44,6 +117,190 @@ snippet tn "typename" w
 typename
 endsnippet
 
+snippet m "method" b
+$1($2){
+	$3
+}
+endsnippet
+
+snippet mi "method" b 
+inline $1($2){
+	$3
+}
+endsnippet
+
+snippet f "method" b
+$1($2){
+	$3
+}
+endsnippet
+
+snippet fi "method" b
+inline $1($2){
+	$3
+}
+endsnippet
+
+snippet sm "static method" b
+static $1($2){
+	$3
+}
+endsnippet
+
+snippet smi "static method" b
+static inline $1($2){
+	$3
+}
+endsnippet
+
+snippet test "test header" b
+#include <cxxtest/TestSuite.h>
+endsnippet
+
+snippet mt "test method" b
+void test_$1(){
+	$2
+}
+endsnippet
+
+snippet clt "class" b
+class Test$1 : public CxxTest::TestSuite{
+public:
+	$2
+};
+endsnippet
+
+snippet tsu "Test set up" b
+void setUp(){
+	$1
+}
+endsnippet
+
+snippet ttd "Test tear down" b
+void setDown(){
+	$1
+}
+endsnippet
+
+snippet c "const"
+const $1 = $2;
+endsnippet
+
+snippet cc "constexpr"
+constexpr $1 = $2;
+endsnippet
+
+snippet sc "static const"
+static const $1 = $2;
+endsnippet
+
+snippet scc "static constexpr"
+static constexpr $1 = $2;
+endsnippet
 
 
+snippet "for " "for" brA
+for($1 ; $2 ; $3){
+	$0
+}
+endsnippet
 
+snippet "for:" "for" brA
+for(auto && $1:$2){
+	$0
+}
+endsnippet
+
+snippet "if " "if" brA
+if($1){
+	$2
+}
+endsnippet
+
+snippet "elif " "elif" brA
+else if($1) {
+	$2
+}
+endsnippet
+
+snippet "else " "else" brA
+else {
+	$2
+}
+endsnippet
+
+snippet "while " "while" brA
+while($1) {
+	$2
+}
+endsnippet
+
+snippet "do " "do while" brA
+do {
+	$2
+} while($1);
+endsnippet
+
+snippet "switch " "switch case" brA
+switch($1) {
+	$2
+	default:
+	{
+		$3
+	}
+}
+endsnippet
+
+snippet "case " "case" brA
+case $1:
+{
+	$2
+}
+break;
+endsnippet
+
+snippet ow "gsl::owner" 
+gsl::owner<$1*>
+endsnippet
+
+snippet ? "(()?():())" 
+(($1) ? ($2) : ($3))
+endsnippet
+
+snippet "scast<" "static_cast<>()" rA
+static_cast<$1>($2)
+endsnippet
+
+snippet "rcast<" "reinterpret_cast<>()" rA
+reinterpret_cast<$1>($2)
+endsnippet
+
+snippet "ccast<" "const_cast<>()" rA
+reinterpret_cast<$1>($2)
+endsnippet
+
+snippet "sc<" "static_cast<>()" rA
+static_cast<$1>($2)
+endsnippet
+
+snippet "rc<" "reinterpret_cast<>()" rA
+reinterpret_cast<$1>($2)
+endsnippet
+
+snippet "cc<" "const_cast<>()" rA
+reinterpret_cast<$1>($2)
+endsnippet
+
+snippet us "using" b
+using $1;
+endsnippet
+
+snippet usn "using" b
+using namespace $1;
+endsnippet
+
+snippet n "nmaespace" b 
+namespace $1{
+$2
+}
+endsnippet

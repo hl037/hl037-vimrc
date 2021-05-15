@@ -1,3 +1,12 @@
+priority 0
+
+snippet main "Bootstrap" b
+\documentclass{$1}
+$0
+\begin{document}
+
+\end{document}
+endsnippet
 
 snippet sec "section" b
 \section{$1}
@@ -64,7 +73,7 @@ snippet lind "label + index" w
 endsnippet
 
 snippet { "brace open" i
-{
+{%
 	$0
 }
 endsnippet
@@ -169,4 +178,46 @@ endsnippet
 snippet +- "<+->" i
 <+->
 endsnippet
+
+# Heading
+
+snippet up "use package" b
+\usepackage{$1}
+endsnippet
+
+snippet up[ "use package" b
+\usepackage[$1]{$2}
+endsnippet
+
+snippet dc "use package" b
+\documentclass{$1}
+endsnippet
+
+# Package/class
+
+snippet '([nrpd]?)c' "newcommand" rb
+`!p snip.rv=rf'\providecommand\{t[1]}{{}}''\n' if match[1]=='d' else ''
+`\\`!p snip.rv={'n':'new', 'r':'renew', 'p':'provide', 'd':'renew'}[match[1]]`command{\\$1}[$2]{$3}
+endsnippet
+
+priority 1
+snippet '([nrpd]?)c0' "newcommand 0 args" rb
+`!p snip.rv=rf'\providecommand\{t[1]}{{}}''\n' if match[1]=='d' else ''
+`\\`!p snip.rv={'n':'new', 'r':'renew', 'p':'provide', 'd':'renew'}[match[1]]`command{\\$1}{$2}
+endsnippet
+priority 0
+
+snippet '([nrpd]?)c(\d+)' "newcommand n args" rb
+`!p snip.rv=rf'\providecommand\{t[1]}{{}}''\n' if match[1]=='d' else ''
+`\\`!p snip.rv={'n':'new', 'r':'renew', 'p':'provide', 'd':'renew'}[match[1]]`command{\\$1}[`!p snip.rv=match[2]`]{$2}
+endsnippet
+
+# xparse
+
+snippet 'x([nrpd]?)c' "NewDocumentCommand (wparse)" br
+\\`!p snip.rv={'n':'New', 'r':'Renew', 'p':'Provide', 'd':'Declare'}[match[1]]`DocumentCommand \\$1 {$2}{%
+	$0
+}
+endsnippet
+
 
