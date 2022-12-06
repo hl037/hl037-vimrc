@@ -1,5 +1,7 @@
 extends css, javascript
 
+priority -1
+
 snippet <button "button" i
 <button ${2:id="$3"} type="${1:button}">$0</button>
 endsnippet
@@ -38,6 +40,55 @@ endsnippet
 
 snippet c "class" w
 class="$1"
+endsnippet
+
+snippet /\.([_A-Za-z0-9-]+)/ "class (2)" rw
+`!p
+if snip.store.tmp['todo', True]:
+	snip.store.tmp.todo = False
+	import vim
+	import re
+	nc = match[0].split('.')[1:]
+
+	l = vim.current.line
+	m = re.search(r'class\s*=\s*"([ _A-Za-z0-9-]*)"', l)
+	if not m:
+		start, end = match.span()
+		end = start # Ultisnips remove what triggered the themplate first
+	else:
+		start, end = m.span()
+		nc = m[1].split() + nc
+	add = f'class="{" ".join(nc)}"'
+#	r, c = vim.current.window.cursor
+	vim.current.line = l[:start] + add + l[end:]
+#	snip.store.tmp.cursor = (r, c)
+#vim.current.window.cursor = snip.store.tmp.cursor
+`
+endsnippet
+
+snippet /\#([_A-Za-z0-9-]+)/ "id (2)" rw
+`!p
+if snip.store.tmp['todo', True]:
+	snip.store.tmp.todo = False
+	import vim
+	import re
+	nc = match[0].split('#')[1:]
+
+	l = vim.current.line
+	m = re.search(r'id\s*=\s*"([ _A-Za-z0-9-]*)"', l)
+	if not m:
+		start, end = match.span()
+		end = start # Ultisnips remove what triggered the themplate first
+	else:
+		start, end = m.span()
+		nc = m[1].split() + nc
+	add = f'id="{" ".join(nc)}"'
+#	raise RuntimeError(f'{l=} {l[:start]=} {add=} {l[end:]=}')
+#	r, c = vim.current.window.cursor
+	vim.current.line = l[:start] + add + l[end:]
+#	snip.store.tmp.cursor = (r, c)
+#vim.current.window.cursor = snip.store.tmp.cursor
+`
 endsnippet
 
 snippet i "id" w

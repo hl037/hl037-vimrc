@@ -61,6 +61,7 @@ function! BuildYCM(info)
 endfunction
 
 
+let g:coc_filetypes_enable = ['javascript', 'vue', 'typescript', 'html', 'css', 'scss', 'sass', 'cpp', 'c']
 
 call plug#begin('~/.cache/vim/plugged')
 
@@ -76,6 +77,7 @@ Plug 'scrooloose/nerdtree'
 Plug 'unkiwii/vim-nerdtree-sync'
 Plug '/usr/share/vim/vimfiles'
 Plug 'junegunn/fzf.vim'
+Plug 'tpope/vim-fugitive'
 Plug 'vim-scripts/L9'
 "Plug 'nvie/vim-pep8'
 Plug 'scrooloose/syntastic'
@@ -84,11 +86,12 @@ Plug 'scrooloose/syntastic'
 Plug 'itchyny/lightline.vim'
 "Plug 'evidens/vim-twig'
 Plug 'Harenome/vim-mipssyntax'
-Plug 'yegappan/grep'
+"Plug 'yegappan/grep'
 "Plug 'ternjs/tern_for_vim', 'for':'javascript'
 "Plug 'Valloric/YouCompleteMe', {'do':function('BuildYCM') , 'for':['javascript', 'vue']}
 Plug 'posva/vim-vue'
 Plug 'dpelle/vim-Grammalecte'
+Plug 'dpelle/vim-LanguageTool'
 Plug 'xolox/vim-misc'
 Plug 'xolox/vim-lua-ftplugin', {'for': 'lua'}
 
@@ -96,8 +99,12 @@ Plug 'lervag/vimtex', {'for':['latex', 'tex']}
 Plug 'wesQ3/vim-windowswap'
 Plug 'kana/vim-textobj-user'
 Plug 'bps/vim-textobj-python', {'for':'javascript'}
-Plug 'neoclide/coc.nvim', {'branch': 'release', 'for':['javascript', 'vue', 'typescript', 'cpp', 'c']}
+Plug 'neoclide/coc.nvim', {'branch': 'release', 'for':g:coc_filetypes_enable}
+Plug 'puremourning/vimspector', {'for' : ['c', 'cpp', 'python']}
+Plug 'peterhoeg/vim-qml', {'for': ['qml']}
 Plug 'dbakker/vim-paragraph-motion'
+"Plug 'sheerun/vim-polyglot'
+Plug 'dylon/vim-antlr'
 
    """""""""""""""""""""""""""""""""""""
 Plug 'davidhalter/jedi-vim', {'for':'python'}
@@ -105,7 +112,9 @@ Plug 'davidhalter/jedi-vim', {'for':'python'}
 "Plugin 'me', {'pinned':1 
 "Plug 'hl037/vim-visualHtml', {'merged': 0
 """""""""""""""""""""""""""""""""""""
-Plug 'SirVer/ultisnips'
+"Plug 'SirVer/ultisnips'
+Plug '~/projects/sources/ultisnips'
+"Plug '~/projects/sources/ultisnps-remote_debug'
 
    """""""""""""""""""""""""""""""""""""
 Plug 'godlygeek/tabular'
@@ -117,7 +126,20 @@ Plug 'tpope/vim-surround'
 Plug 'senderle/restoreview'
 Plug 'AndrewRadev/sideways.vim'
    """""""""""""""""""""""""""""""""""""
+if !has('nvim')
+   Plug 'https://github.com/wgurecky/vimSum.git'
+   Plug 'roxma/nvim-yarp'
+   Plug 'roxma/vim-hug-neovim-rpc'
+else
+   Plug 'https://github.com/wgurecky/vimSum.git', { 'do' : ':UpdateRemotePlugins' }
+endif
+
+Plug 'iloginow/vim-stylus'
+
 Plug 'Yggdroot/indentLine'
+Plug '~/.vim/me/maw'
+Plug '~/.vim/me/fzf-hl037'
+Plug '~/.vim/me/hl037Helpers'
 
 call plug#end()
 
@@ -148,13 +170,25 @@ if !has('nvim')
   map <esc>[1;5C <c-Right>
   map <esc>[1;5D <c-left>
   map <esc>[1;5D <c-Left>
+  " if $TERM =~ '256'
+  "   set termguicolors
+  "   let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
+  "   let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
+  " endif
+else
+  if $TERM =~ '256'
+    set termguicolors
+  endif
 endif
 
 
 " Indent line
 
 let g:indentLine_char_list = ['┃', '┇', '│', '┆', '┊', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷', '╷']
-let g:indentLine_color_term = 233
+let g:indentLine_color_term=233
+let g:indentLine_color_gui='#343434' 
+
+let g:vim_json_conceal = 0
 
 " Sideways
 nnoremap <M-h> :SidewaysLeft<cr>
@@ -174,6 +208,9 @@ let g:jedi#documentation_command = "K"
 let g:jedi#usages_command = "<leader>n"
 let g:jedi#completions_command = "<C-Space>"
 let g:jedi#rename_command = "<leader>r"
+set completeopt=menuone,longest
+
+let g:python_highlight_space_errors = 0
 
 
 
@@ -183,6 +220,7 @@ let g:UltiSnipsSnippetStorageDirectoryForUltiSnipsEdit= '~/.vim/UltiSnips'
 inoremap <c-x><c-k> <c-x><c-k>
 
 let g:NERDTreeMouseMode = 3
+let g:NERDTreeShowHidden = 1
 
 
 " Start autocompletion after 4 chars
@@ -203,10 +241,12 @@ let g:ctrlp_map = ''
 let g:ctrlp_working_path_mode = 'ra'
 let g:ctrlp_buffer_func = { 'enter': 'CtrlP_HL_enter', }
 
-nmap <leader>ff :CtrlP<cr>
-nmap <leader>fb :CtrlPBuffer<cr>
-nmap <leader>fg :Lines<cr>
-nmap <leader>fl :BLines<cr>
+"nmap <leader>ff :CtrlP<cr>
+nmap <leader>fff :Files g:global_cwd<cr>
+nmap <leader>ffb :Buffers<cr>
+nmap <leader>fll :Lines<cr>
+nmap <leader>flb :BLines<cr>
+nmap <leader>flg :Rg<cr>
 
 "nmap <leader>; :Files<cr>
 "nmap <leader>: :Buffers<cr>
@@ -215,9 +255,12 @@ nmap <leader>fl :BLines<cr>
 "nmap <leader>fg :BLines<cr>
 "nmap <leader>fl :BLines<cr>
 
-nmap <leader>; <leader>ff
-nmap <leader>: <leader>fb
-nmap <leader>! <leader>fg
+nmap <leader>;          <leader>fll
+nmap <leader><leader>;  <leader>flg
+nmap <leader>: <leader>fff
+nmap <leader><leader>: <leader>ffb
+nmap <leader>! <leader>ffb
+
 
 let g:fzf_colors = {
   \ 'fg':      ['fg', 'Normal'],
@@ -313,6 +356,9 @@ let g:UltiSnipsJumpForwardTrigger = "<tab>"
 "Plugin 'grammalecte'
 let g:grammalecte_cli_py = "~/.vim/g/grammalecte-cli.py"
 let g:grammalecte_disable_rules = "apostrophe_typographique apostrophe_typographique_après_t espaces_début_ligne espaces_milieu_ligne typo_points_suspension1 nbsp_après_chevrons_ouvrants nbsp_avant_chevrons_fermants1 typo_tiret_incise typo_guillemets_typographiques_doubles_ouvrants typo_guillemets_typographiques_doubles_fermants typo_tiret_début_ligne esp_milieu_ligne typo_parenthese_ouvrante_collée typo_espace_manquant_après1 typo_ponctuation_superflue3 typo_espace_avant_signe_fermant typo_espace_après_signe_ouvrant esp_début_ligne typo_guillemets_typographiques_simples_ouvrants typo_guillemets_typographiques_simples_fermants typo_points_suspension3 nbsp_avant_deux_points unit_nbsp_avant_unités1"
+
+"let g:languagetool_jar="/usr/share/java/languagetool/languagetool-commandline.jar"
+let g:languagetool_cmd='/usr/bin/languagetool'
 
 """"""""""""""""""""""""""""""""""""
 "Plugin 'godlygeek/tabular.git'
@@ -452,20 +498,6 @@ nmap <silent> <Leader>bt <Plug>TaskList
 au BufRead,BufNewFile *.md set filetype=markdown
 
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Autocomplete
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-set completeopt=longest,menuone
-inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
-
-inoremap <expr> <C-n> pumvisible() ? '<C-n>' :
-  \ '<C-n><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
-
-inoremap <expr> <M-,> pumvisible() ? '<C-n>' :
-  \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
-
-inoremap <Nul> <c-x><c-o>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -496,10 +528,28 @@ function! DiffOri()
   exec "!diff /tmp/working_copy %"
 endfunction
 
-function! CmdLine(str)
-    exe "menu Foo.Bar :" . a:str
-    emenu Foo.Bar
-    unmenu Foo
+function! CursorShift(str,...)
+    let l:cursor = get(a:, 1, '_|_')
+    let l:cursor_len = strlen(l:cursor)
+    let l:id = stridx(a:str, l:cursor)
+    if l:id < 0
+       return a:str
+    endif
+    return a:str[ : (l:id - 1)] .. a:str[ (l:id + l:cursor_len) : ] .. repeat('<Left>', strlen(a:str[ (l:id + l:cursor_len) : ]))
+ endfunction
+
+" function! CmdLine(str,...)
+"     exe "menu Foo.Bar :" .. call('CursorShift', [a:str] + a:000)
+"     emenu Foo.Bar
+"     unmenu Foo
+" endfunction
+" 
+function! CmdLine(str,...)
+   let a = call('CursorShift', [a:str] + a:000)
+   echom a
+   exe "map ÆÆÆ :" .. a
+   norm ÆÆÆ
+   "unmap ÆÆÆ
 endfunction
 
 function! VisualSelection(direction) range
@@ -514,7 +564,11 @@ function! VisualSelection(direction) range
     elseif a:direction == 'gv'
         call CmdLine("vimgrep " . '/'. l:pattern . '/' . ' **/*.')
     elseif a:direction == 'replace'
-        call CmdLine("%s" . '/'. l:pattern . '/')
+        call CmdLine("%s" . '/'. l:pattern . '/_|_/g')
+    elseif a:direction == 'sub'
+        call CmdLine("s" . '/'. l:pattern . '/_|_/g')
+    elseif a:direction == 'normal'
+        call CmdLine("g" . '/'. l:pattern . '/normal ')
     elseif a:direction == 'f'
         execute "normal /" . l:pattern . "^M"
     endif
@@ -568,6 +622,27 @@ function <SID>Help2Md()
   .,$s/\(.*\)\_s------*/## \1/
 endfunction
 
+fun! Mksession(name)
+    let need_tree = g:NERDTree.IsOpen()
+    NERDTreeClose
+    execute "mksession! " . a:name
+    if need_tree
+        call writefile(readfile(a:name)+['NERDTree'], a:name)
+        NERDTree
+    endif
+endfun
+
+command! -nargs=1 Mksession call Mksession(<f-args>)
+
+command! DiffHead call <SID>DiffHead()
+function! <SID>DiffHead()
+   let l:name = expand("%")
+   vertical botright new
+   setlocal buftype=nofile bufhidden=wipe nobuflisted noswapfile nowrap
+   silent execute '$read ! git diff -u ' . l:name
+   set filetype=diff
+endfunction
+
 command! SynGroup call <SID>SynGroup()
 function! <SID>SynGroup()
   if !exists("*synstack")
@@ -576,3 +651,88 @@ function! <SID>SynGroup()
   echo map(synstack(line('.'), col('.')), 'synIDattr(v:val, "name")')
 endfunc
 
+autocmd BufEnter * silent! lcd %:p:h
+
+let s:ntfind_lock = 0
+
+fun! s:ntfind()
+  if s:ntfind_lock || empty(expand('%:p'))
+    return
+  endif
+  if g:NERDTree.IsOpen()
+    let s:ntfind_lock = 1
+    let l:cur_win = winnr()
+    NERDTreeFocus
+    let l:nt_win = winnr()
+    if l:cur_win != l:nt_win
+      wincmd p
+      try
+        NERDTreeFind
+        wincmd p
+      catch /.*/
+      endtry
+    endif
+    let s:ntfind_lock = 0
+  endif
+endfun
+autocmd BufEnter * call s:ntfind()
+
+
+
+function! s:disable_coc_for_type()
+  if index(g:coc_filetypes_enable, &filetype) == -1
+    :silent! CocDisable
+  else
+    :silent! CocEnable
+  endif
+endfunction
+
+augroup CocGroup
+ autocmd!
+ autocmd BufNew,BufEnter,BufAdd,BufCreate * call s:disable_coc_for_type()
+augroup end
+
+command! GetColor call <SID>GetColor()
+function! <SID>GetColor()
+  py3 << EOF
+import subprocess
+from vim_hl037.utils import insert
+res = subprocess.run(["kdialog", "--getcolor" ], capture_output=True).stdout.decode('utf8').strip()
+insert(res)
+EOF
+endfunction
+
+
+command! -nargs=+ Shlex call <SID>Shlex(<q-args>)
+function! <SID>Shlex(arg)
+  py3 << EOF
+import vim
+import shlex
+from vim_hl037.utils import insert
+args = vim.eval("a:arg")
+toks = shlex.split(args)
+res = f'[{",".join(map(repr, toks))}]'
+insert(res)
+EOF
+endfunction
+
+
+command! -range -nargs=+ SS <line1>,<line2>call <SID>SubExchange(<f-args>)
+function! <SID>SubExchange(w1, w2) range
+  execute a:firstline.','.a:lastline.'s/'.a:w1.'/<esc><esc><esc>/eg'
+  execute a:firstline.','.a:lastline.'s/'.a:w2.'/'.a:w1.'/eg'
+  silent! execute a:firstline.','.a:lastline.'s/<esc><esc><esc>/'.a:w2.'/eg'
+endfunction
+
+" function! Ttt()
+"    py3 << EOF
+" #vim.eval('execute("echom mode()")')
+" vim.command('echom mode()')
+" vim.feedkeys('
+" " vim.eval('execute("stopinsert")')
+" " vim.command('stopinsert')
+" vim.command('echom mode()')
+" EOF
+" endfunction
+" 
+" au InsertChange * :call Ttt()

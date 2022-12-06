@@ -1,5 +1,10 @@
-set shiftwidth=2
-set tabstop=2
+if get(g:, 'config_flavor', 'default') == "socotec"
+  set shiftwidth=4
+  set tabstop=4
+else
+  set shiftwidth=2
+  set tabstop=2
+endif
 set expandtab
 
 vnoremap <leader>cc :normal I#<CR>

@@ -2,6 +2,18 @@
 snippet sn
 snippet $1 "$2" $3
 $4
-endsnippet$0
+endsnippet``
 endsnippet
 
+snippet eol "" 
+context "eol(snip)"
+snippet $1 "$2" $3
+$4
+endsnippet``
+endsnippet
+
+snippet g "" 
+global !p
+from vim_hl037.UltiSnips import *
+endglobal
+endsnippet

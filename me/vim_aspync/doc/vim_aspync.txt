@@ -1,0 +1,26 @@
+*vim_aspync.txt*    For Vim version 7.4 or later.
+
+vim_aspync                                           *vim_aspync*
+
+
+Introduction
+
+vim_aspync is a helper python library to ease working with code 
+that need to wait vim to respond before executing other commands.
+
+When executing vim commands from python, there are not executed immediately.
+Instead, they are queued and executed all at once afte the `pythonx` command
+returned. In particular, when an edit mode change is performed, vim won't
+reflect the change when asking what is the current mode before vim resumed.
+
+vim_aspync provides and event loop to built-in python event loop (using the
+`async` / `await` mechanism) to run your functions as a coroutine, that coulbe
+paused the time vim respond, and resumed immediately after.
+
+To make it even simpler / natural, you only need to wrap your function with
+`@vim_aspync.wrap`, and declare it `async def`.
+
+As a side effect you also get a free async boilerplate, since `vim_aspync`
+handles all the event loop boilerplate.
+
+

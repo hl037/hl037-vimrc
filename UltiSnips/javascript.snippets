@@ -1,3 +1,64 @@
+global !p
+T = snip.store.tmp
+B = snip.store.buffer
+F = snip.store.file
+S = snip.store.session
+C = snip.store.common
+I = snip.store.snippet
+
+_once = None
+
+def once():
+	global _once
+	if _once is None:
+		_once = T['once', True]
+		T.once = False
+	return _once
+
+class StoreProxy(object):
+	def __init__(self, tab, store, key=None):
+		self.store = store
+		self.tab = tab
+		self.key = None
+		if key is not None:
+			self.__getitem__(key)
+	
+	def __getitem__(self, key):
+		if self.key is not None:
+			raise RuntimeError("Key already assigned")
+		if not isinstance(key, tuple):
+			key = key, ''
+		snip.rv = self.store[key]
+		self.key = key[0]
+	
+	def __getattr__(self, key):
+		return self.__getitem__(key)
+
+class DummyProxy(object):
+	def __getitem__(self, key):
+		return None
+	def __getattr__(self, key):
+		return self.__getitem__(key)
+	
+
+class TabMem(object):
+	def __call__(self, tab, store, key=None):
+		if once():
+			r = StoreProxy(tab, store, key)
+			I['_TabMemProxies', []].append(r)
+			return r
+		else :
+			return DummyProxy()
+	
+	def do(self):
+		for p in I['_TabMemProxies', []]:
+			if p.key is None:
+				raise RuntimeError('A tab_mem has no key')
+			p.store[p.key] = t[p.tab]
+
+mem_tab = TabMem()
+	
+endglobal
 
 snippet VuexStore "VuexStore" 
 import Vue from 'vue'
@@ -15,6 +76,15 @@ export default new Vuex.Store({
 }
 endsnippet
 
+priority 1
+snippet i "import" b
+import ${2:`!p from pathlib import Path; snip.rv=Path(t[1]).stem`} from '@/$1'$0
+endsnippet
+
+snippet i{ "import {}" b
+import { $2 } from '@/$1'$0
+endsnippet
+
 
 priority 1
 snippet (fun "Function" i
@@ -29,6 +99,12 @@ snippet (f "Function" i
 });
 endsnippet
 
+snippet (= "Function lambda" i
+($1) => {
+	$0
+}
+endsnippet
+
 priority 0
 snippet fun "Function" w
 function $1($2) {
@@ -36,8 +112,18 @@ function $1($2) {
 }
 endsnippet
 
-snippet f "Function" w
+snippet e "export" b
+export
+endsnippet
+
+snippet f "Function" b
 function $1($2) {
+	$0
+}
+endsnippet
+
+snippet ef "export function" b
+export function $1($2) {
 	$0
 }
 endsnippet
@@ -78,50 +164,100 @@ snippet "if " "if" brA
 if($1) {
 	$2
 }
-$0
 endsnippet
 
 snippet "elif " "else if" brA
 else if($1) {
 	$2
 }
-$0
 endsnippet
 
 snippet "while " "while" brA
-if($1) {
+while($1) {
 	$2
 }
-$0
+endsnippet
+
+snippet "do " "while" brA
+do {
+	$2
+} while($1)
 endsnippet
 
 snippet "else " "else" brA
 else {
 	$1
 }
-$0
+endsnippet
+
+snippet "for:" "for of" brA 
+for($1 of $2){
+	$3
+}
 endsnippet
 
 snippet "for " "for" brA
-for($1 ; ${2:$1 < $3} ; ${4:++$1}) {
-	$5
+for($1 ; $2 ; $3){
+	$0
 }
-$0
 endsnippet
 
-snippet !\[! "[]" r
+snippet "switch " "switch" brA
+switch($1){
+	case $2:
+		$3
+		break;
+	default:
+		break;
+}
+endsnippet
+
+snippet "case " "case" brA
+case $1:
+	$2
+	break;
+endsnippet
+
+snippet si "init" b
+this.$1 = $1
+endsnippet
+
+snippet t: "this dict" b
+$1 : this.$1,
+endsnippet
+
+snippet "for<" "for" brA
+`!p
+m = re.search(r'\b(\w+)\s*\=', t[1])
+I[1] = m[1] if m else (t[1] if ' ' not in t[1] else '')
+`for($1 ; `!p snip.rv=I[1]` < $2 ; ++`!p snip.rv=I[1]`){
+	$0
+}
+endsnippet
+
+snippet "for>" "for" brA
+`!p
+m = re.search(r'\b(\w+)\s*\=', t[1])
+I[1] = m[1] if m else (t[1] if ' ' not in t[1] else '')
+`for($1 ; `!p snip.rv=I[1]` >= $2 ; --`!p snip.rv=I[1]`){
+	$0
+}
+endsnippet
+
+
+snippet !\[ ! "[]" r
 [
 	$1
 ]
 endsnippet
 
-snippet !\(! "()" r
+snippet !\( ! "()" r
 (
 	$1
 )
 endsnippet
 
-snippet !{! "{}" r
+snippet !{ ! "{}" r
 {
 	$1
 }
@@ -129,7 +265,7 @@ endsnippet
 
 snippet Dvar "console.log({})" b
 console.log({
-	'$1' : $1,
+	'$1' : $1,$2
 });
 endsnippet
 
@@ -151,4 +287,34 @@ endsnippet
 
 snippet ib "debugger function"
 (() => {debugger; return $1})()
+endsnippet
+
+snippet animate "animate" i
+animate([
+	{$1},
+	{$2}
+],{
+	duration: $3,
+	iterations: ${4:1}
+})
+endsnippet
+
+snippet "!u" "is not undefined" ir
+!== undefined
+endsnippet
+
+snippet "=u" "is undefined" ir
+=== undefined
+endsnippet
+
+snippet desc "unit testing describe" b
+describe("$1", function () {
+	$0
+})
+endsnippet
+
+snippet it "unit testing it" b
+it($1, function () {
+	$0
+})
 endsnippet

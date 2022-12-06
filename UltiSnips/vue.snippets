@@ -1,6 +1,58 @@
 extends html, css, javascript
 
 
+# snippet vue "" 
+# 
+# <style scoped lang="scss">
+# 
+# </style>
+# 
+# <template>
+# 	
+# </template>
+# 
+# <script lang="ts">
+# 
+# import { ref, onMounted, watch, toRefs, computed } from 'vue'
+# 
+# export default {
+# 	name : '`!p
+# snip.rv = re.sub(r'\.vue$', '', fn)
+# `',
+# 	components: {
+# 
+# 	},
+# 	setup(props) {
+# 		const r = {}
+# 
+# 		return r
+# 	}
+# }
+# </script>
+# 
+# endsnippet
+
+snippet vuejs "" 
+
+<style scoped lang="scss">
+
+</style>
+
+<template>
+	
+</template>
+
+<script setup>
+/* global defineProps, defineEmits, defineExpose */
+
+import { ref, onMounted, watch, toRefs, computed } from 'vue'
+
+$0
+
+</script>
+
+endsnippet
+
 snippet vue "" 
 
 <style scoped lang="scss">
@@ -11,19 +63,35 @@ snippet vue ""
 	
 </template>
 
-import { ref, reactive, computed, watch, onMounted, onBeforeMount } from '@vue/composition-api'
+<script setup lang="ts">
+/* global defineProps, defineEmits, defineExpose */
 
-<script>
-export default {
-	name : '`!p
-snip.rv = re.sub(r'\.vue$', '', fn)
-`',
-	setup(props) {
-		const r = {}
+import { ref, onMounted, watch, toRefs, computed } from 'vue'
 
-		return r
-	}
-}
+$0
+
 </script>
 
+endsnippet
+
+
+snippet expose "defineExpose" b
+defineExpose({
+	$1
+})
+endsnippet
+
+snippet emit "Emit" b
+const emit = defineEmits<{
+	(e: '$1', $2): void,$0
+}>()
+endsnippet
+snippet em "Emit, continued" b 
+(e: '$1', $2): void,$0
+endsnippet
+
+snippet props "Props" b
+const props = defineProps<{
+	$0
+}>()
 endsnippet

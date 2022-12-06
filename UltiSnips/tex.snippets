@@ -57,7 +57,7 @@ snippet item "itemize" w
 endsnippet
 
 snippet it "item" b
-\item{$1}$0
+\item $0
 endsnippet
 
 snippet lab "label" w
@@ -175,6 +175,10 @@ snippet bl "block" b
 \end{block}
 endsnippet
 
+snippet nt "note" b
+\note{$1}
+endsnippet
+
 snippet +- "<+->" i
 <+->
 endsnippet
@@ -189,7 +193,7 @@ snippet up[ "use package" b
 \usepackage[$1]{$2}
 endsnippet
 
-snippet dc "use package" b
+snippet dc "document class" b
 \documentclass{$1}
 endsnippet
 

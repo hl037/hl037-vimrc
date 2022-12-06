@@ -1,56 +1,93 @@
-
 priority 0
 
+global !p
+from vim_hl037.UltiSnips import *
+from vim_hl037.UltiSnips.python import *
+
+endglobal
+
+context "eol(snip)"
 snippet m "class method" b
 def $1(self$2):
 	$3
 endsnippet
 
+context "eol(snip)"
 snippet m_ "class magical method" b
 def __$1__(self$2):
 	$3
 endsnippet
 
+context "eol(snip)"
 snippet sm "static class method" b
 @staticmethod
 def $1($2):
 	$3
 endsnippet
 
+context "eol(snip)"
 snippet sm_ "static magic method" b
 @staticmethod
 def __$1__(cls$2):
 	$3
 endsnippet
 
+context "eol(snip)"
 snippet cm "class class method" b
 @classmethod
 def $1(cls$2):
 	$3
 endsnippet
 
+context "eol(snip)"
 snippet cm_ "class magic method" b
 @classmethod
 def __$1__(cls$2):
 	$3
 endsnippet
 
+context "eol(snip)"
+snippet mprop "Property" b
+@property
+def $1(self):
+	$2
+
+@$1.setter
+def $1(self, val):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet mmprop "Property" b
+@property
+def $1(self):
+	return $2
+
+@$1.setter
+def $1(self, val):
+	$2 = val
+endsnippet
+
+context "eol(snip)"
 snippet prop "Property" b
 @property
 def $1(self):
 	$2
 endsnippet
 
+context "eol(snip)"
 snippet cprop "Cached Property" b
 @cached_property
 def $1(self):
 	$2
 endsnippet
 
+context "eol(snip)"
 snippet Cprop "init cached property" 
 from functools import cached_property
 endsnippet
 
+context "eol(snip)"
 snippet f "function" b
 def $1($2):
 	$3
@@ -60,6 +97,7 @@ snippet s. "self."
 self.
 endsnippet
 
+context "eol(snip)"
 snippet si "self initialization" b
 self.$1 = $1
 endsnippet
@@ -82,8 +120,9 @@ snippet sup "super()"
 super()
 endsnippet
 
+context "inFunction(snip)"
 snippet supi "super().__init__()"
-super().__init__($1)
+super().`!p snip.rv = snip.context[0]`($1)
 endsnippet
 
 snippet s "self"
@@ -106,18 +145,22 @@ snippet s= "self initialization dif" b
 self.$1 = $2
 endsnippet
 
+context "eol(snip)"
 snippet i "import" b
 import $1
 endsnippet
 
+context "eol(snip)"
 snippet fi "import from" b
 from $1 import $2
 endsnippet
 
+context "eol(snip)"
 snippet fia "import from as" b
 from $1 import $2 as $3
 endsnippet
 
+context "eol(snip)"
 snippet cl "class (object):" b
 class $1(${2:object}):
 	"""
@@ -127,77 +170,135 @@ class $1(${2:object}):
 		$5
 endsnippet
 
+context "eol(snip)"
+snippet dcl "dataclass (object):" b
+@dataclass
+class $1(${2:object}):
+	"""
+	$3
+	"""
+	$4
+endsnippet
+
+context "eol(snip)"
 snippet cle "class (RuntimeError)" b
 class $1(${2:RuntimeError}):
 	pass
 endsnippet
 
 snippet p "print" b
-print("$1")$3
+print('$1')$3
+endsnippet
+
+snippet pf "print f''" b
+print(f'$1')$3
 endsnippet
 
 snippet pp "pprint" b
 pprint($1)$3
 endsnippet
 
+context "eol(snip)"
 snippet r "return" b
 return $1
 endsnippet
 
+context "eol(snip)"
 snippet y "yield" b 
 yield $1
 endsnippet
 
+context "eol(snip)"
 snippet '(' "gen_comp" i
 ( $3 for $1 in $2 ) $4
 endsnippet
 
 priority 0
+context "eol(snip)"
 snippet [ "list_comp" i
 [ $3 for $1 in $2 ] $4
 endsnippet
 
 priority 5
+context "eol(snip)"
 snippet {{ "set_comp" i
 { $3 for $1 in $2 } $4
 endsnippet
 
 priority 0
+context "eol(snip)"
 snippet { "dict_comp" i
 { $3 : $4 for $1 in $2 } $5
 endsnippet
 
 
+context "eol(snip)"
 snippet "for " "for" brA
 for $1 in $2 :
 	$3
 endsnippet
 
+context "eol(snip)"
+snippet "fors " "fors" brA
+for $1 in $1s :
+	$2
+endsnippet
+
+context "eol(snip)"
 snippet "if " "if" brA
 if $1 :
 	$2
 endsnippet
 
+context "eol(snip)"
 snippet "elif " "elif" brA
 elif $1 :
 	$2
 endsnippet
 
+context "eol(snip)"
 snippet "else " "else" brA
 else :
 	$2
 endsnippet
 
+context "eol(snip)"
 snippet "while " "while" brA
 while $1 :
 	$2
 endsnippet
 
+context "eol(snip)"
+snippet "match " "match" brA
+match $1 :
+	$2
+endsnippet
+
+context "eol(snip)"
+snippet "case " "case" brA
+case $1 :
+	$2
+endsnippet
+
+context "maybeMatchCase(snip)"
+snippet "c " "case" brA
+case $1 :
+	$2
+endsnippet
+
+context "maybeMatchCase(snip)"
+snippet "_ " "case _" brA
+case _ :
+	$2
+endsnippet
+
+context "eol(snip)"
 snippet "with " "with" brA
 with $1 :
 	$2
 endsnippet
 
+context "eol(snip)"
 snippet "try " "try" brA
 try :
 	$1
@@ -205,7 +306,13 @@ except $2:
 	$3
 endsnippet
 
-snippet 'l ' "lambda" r
+context "eol(snip)"
+snippet "except " "except" brA
+except $1:
+	$2
+endsnippet
+
+snippet 'l:' "lambda" r
 lambda $1: $2
 endsnippet
 
@@ -239,6 +346,7 @@ endsnippet
 # 	$0
 # endsnippet
 
+context "eol(snip)"
 snippet clt "test case" 
 class Test$1():
 	"""
@@ -248,14 +356,23 @@ class Test$1():
 	$0
 endsnippet
 
+context "eol(snip)"
 snippet ft "test function" b
 def test_$1($2):
 	$3
 endsnippet
 
+context "eol(snip)"
 snippet mt "test method" b
 def test_$1(self$2):
 	$3
+endsnippet
+
+context "eol(snip)"
+snippet paramt "parameterize test" 
+@pytest.mark.parametrize('$1', [
+	$2
+])
 endsnippet
 
 snippet Dbug "import dbug" b
@@ -278,7 +395,7 @@ snippet DNL "DNL" b
 DNL()
 endsnippet
 
-snippet DWAI "DWAI" b
+snippet WAI "DWAI" b
 DWAI()
 endsnippet
 
@@ -378,6 +495,18 @@ snippet col "Col" b
 $1 = sa.Column(Types.$2, ${3:index = True})
 endsnippet
 
+priority -1
+context "eol(snip)"
+snippet col "Col, after"
+sa.Column(Types.$2, ${3:index = True})
+endsnippet
+
+priority 0
+
+snippet pk "primary key"
+primary_key=True
+endsnippet
+
 # Click
 
 
@@ -397,6 +526,20 @@ if __name__ == "__main__" :
 	main()
 
 endsnippet
+
+snippet cli1 "Click cli" b
+import click
+
+
+@click.command()
+def main():
+	$1
+
+if __name__ == "__main__" :
+	main()
+
+endsnippet
+
 
 snippet cmd "Click cmd" b
 `!p
@@ -419,6 +562,10 @@ endsnippet
 
 snippet opt "Click opt" b
 @click.option('--$1', '-$2', type=${3:str})
+endsnippet
+
+snippet flag "Click flag" b
+@click.option('--$1', '-$2', is_flag=True)
 endsnippet
 
 snippet gr "Click group" b
@@ -556,4 +703,101 @@ _size_info_list_ = [
 ]
 endsnippet
 
+snippet ub "Ultisnips breakpoint" b
+from UltiSnips.remote_pdb import RemotePDB;RemotePDB.breakpoint()
+endsnippet
+
+
+# snippet test1 "test"
+# `!p
+# import sys
+# if 'dummy' not in sys.modules:
+# 	sys.modules['dummy'] = 'tt'
+# 	snip.rv=''
+# else:
+# 	snip.rv='tt'
+# `
+# endsnippet
+# 
+# 
+# 
+# snippet test2 "test"
+# `!p
+# import sys
+# if 'dummy' not in sys.modules:
+# 	sys.modules['dummy'] = 'tt'
+# else:
+# 	snip.rv='tt'
+# `
+# endsnippet
+# 
+# 
+# 
+# 
+# snippet test "test"
+# `!p
+# 
+# ``!p
+# import sys
+# if 'dummy' not in sys.modules:
+# 	sys.modules['dummy'] = 'tt'
+# else:
+# 	snip.rv='tt'
+# `
+# endsnippet
+# snippet test3 "" 
+# `!p
+# snip.store.snippet["Test"]="tt"
+# snip.rv=""
+# ``!p
+# snip.rv=snip.store.snippet["Test", ""]
+# `
+# endsnippet
+# 
+# 
+# snippet test4 "test"
+# `!p import sys;sys.modules['dummy'] = 'tt';snip.rv=''``!p snip.rv=sys.modules.get('dummy', '')`
+# endsnippet
+# 
+# 
+# snippet test5 "test"
+# `!p
+# 
+# import sys
+# 
+# if 'dummy' not in sys.modules:
+# 	sys.modules['dummy'] = 't1'
+# 
+# #snip.rv=''
+# 
+# ``!p
+# 
+# if 'dummy' not in sys.modules:
+# 	snip.rv = ''
+# elif sys.modules['dummy'] == "t1":
+# 	sys.modules['dummy'] = 't2'
+# 	snip.rv = ''
+# else:
+# 	snip.rv = 'tt'
+# 	
+# `
+# endsnippet
+
+snippet dbg "" 
+`!p
+from UltiSnips.remote_pdb import RemotePDB
+RemotePDB.breakpoint()
+`
+endsnippet
+
+
+snippet dbge "" 
+`!p
+raise RuntimeError('TEST')
+`
+endsnippet
+
+snippet iic "import iceream" b
+from icecream import ic
+endsnippet
 

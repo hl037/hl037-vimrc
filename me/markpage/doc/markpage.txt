@@ -1,0 +1,36 @@
+*markpage.txt*    For Vim version 7.4 or later.
+
+markpage                                           *markpage*
+
+
+
+
+
+
+
+
+
+
+1) Introduction
+
+Markpage is a bookmark plugin, that provide a very simple interface.
+
+Here is the syntax of a bookmark entry: >
+
+    <file path>:<line number> <short comment>
+    <line content>
+    <long comment>
+    <long comment>
+    ...
+
+
+
+The algorithm will try to match the line content in the file, and will select
+the most similar (Levenshtein distance if the `Leveneinshtein` python module
+is installed, else simply find an exact match), and if several matches, the
+one the nearest from the original position.
+
+When clicking on a file path / line number, it will open the buffer at the
+bookmark location in the previously selected window (similar to how NERDTree
+works).
+

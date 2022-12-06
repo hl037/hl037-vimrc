@@ -1,0 +1,10 @@
+
+global !p
+def eol():
+	return snip.col == len(snip.buffer[snip.line])
+endglobal
+
+context "snip.line == 0"
+snippet skbs "skbs template header" b
+${1:##} # ${2:\{\{}__skbs_template__${3:\}\}}
+endsnippet

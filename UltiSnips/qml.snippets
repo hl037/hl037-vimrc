@@ -1,0 +1,151 @@
+
+snippet i "i18n" 
+i18n("$1")
+endsnippet
+
+snippet form "K.FormLayout"
+K.FormLayout {
+	$1
+}
+endsnippet
+
+snippet sec "K FormLayout section"
+K.Separator {
+	K.FormData.label: i18n("$1")
+	K.FormData.isSection: true
+}
+endsnippet
+
+snippet te "TextField"
+QQC2.TextField {
+	id: $1
+	K.FormData.label: i18n("$2")
+}
+endsnippet
+
+snippet passwd "Password" 
+K.PasswordField {
+	id: ${1:password}
+	K.FormData.label: i18n("${2:Password:}")
+}
+endsnippet
+
+snippet b "Button" 
+QQC2.Button{
+	$1
+}
+endsnippet
+
+snippet ckb "CheckBox" 
+QQC2.CheckBox{
+	id: $1
+	K.FormData.label: i18n("$2")
+}
+endsnippet
+
+snippet cmb "ComboBox"
+QQC2.ComboBox {
+	id: $1
+	K.FormData.label: i18n("$2")
+
+	model: $3
+}
+endsnippet
+
+snippet spb "SpinBox" 
+QQC2.SpinBox {
+	id: $1
+	K.FormData.label: i18n("$2")
+	from: $3
+	to: $4
+	value: $5
+}
+endsnippet
+
+snippet aspb "AdvancedSpinBox" 
+AdvancedSpinBox {
+	id: $1
+	K.FormData.label: i18n("$2")
+	from: $3
+	to: $4
+	value: $5
+	prefix: $6
+	suffix: $7
+}
+endsnippet
+
+snippet klab "Kirigami label" 
+K.Label{
+	text: i18n("$1")
+}
+endsnippet
+
+snippet it "Item"
+Item{
+	$1
+}
+endsnippet
+
+snippet row "RowLayout"
+RowLayout{
+	$1
+}
+endsnippet
+
+snippet col "ColumnLayout" 
+ColumnLayout{
+	$1
+}
+endsnippet
+
+snippet stack "StackLayout" 
+StackLayout {
+	width: parent.width
+	currentIndex: $1
+	$2
+}
+endsnippet
+
+snippet fw "fillWidth" 
+Layout.fillWidth: true
+endsnippet
+
+snippet fh "fillHeight" 
+Layout.fillHeight: true
+endsnippet
+
+snippet en "enabled:" 
+enabled: $0
+endsnippet
+
+snippet t "text"
+text: i18n("$1")
+endsnippet
+
+snippet id "id:" 
+id: $0
+endsnippet
+
+snippet lab "label" 
+K.FormData.label: i18n("$1")
+endsnippet
+
+snippet ico "icon.name" 
+icon.name: "$1"
+endsnippet
+
+snippet twin "twin form layout" 
+twinFormLayouts: [$1]
+endsnippet
+
+snippet / {/ "brace" rA
+ {
+	$1
+}
+endsnippet
+
+snippet /\[/ "[" r
+[
+	$1
+]
+endsnippet

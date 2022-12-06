@@ -1,0 +1,71 @@
+snippet buffer "test buffer" 
+`!p
+if snip.store.buffer['buffer_not_done', True]:
+	snip.rv = str(snip.store.buffer['k1', 1])
+	snip.store.buffer['k1'] += 1
+	snip.store.buffer['buffer_not_done'] = False
+else:
+	snip.store.buffer['buffer_not_done'] = True
+`
+endsnippet
+
+snippet session "test session" 
+`!p
+if snip.store.session['not_done', True]:
+	snip.rv = 'session :' + str(snip.store.session['k1', 1])
+	snip.store.session['k1'] += 1
+	snip.store.session['not_done'] = False
+else:
+	snip.store.session['not_done'] = True
+`
+endsnippet
+
+
+snippet file "test file" 
+`!p
+if snip.store.file['not_done', True]:
+	snip.rv = 'file :' + str(snip.store.file['k1', 1])
+	snip.store.file['k1'] += 1
+	snip.store.file['not_done'] = False
+else:
+	snip.store.file['not_done'] = True
+`
+endsnippet
+
+snippet common "test common" 
+`!p
+if snip.store.common['not_done', True]:
+	snip.rv = 'common :' + str(snip.store.common['k1', 1])
+	snip.store.common['k1'] += 1
+	snip.store.common['not_done'] = False
+else:
+	snip.store.common['not_done'] = True
+`
+endsnippet
+
+snippet c "snip.c" 
+`!p
+cur = snip.store.buffer['cur', 0]
+snip.store.buffer[f'snip_c[{cur}]'] = snip.c
+snip.store.buffer['cur'] = cur + 1
+snip.rv=None
+`
+endsnippet
+
+snippet cc "snip.c" 
+`!p
+cur = snip.store.buffer['cur', 0]
+snip.store.buffer[f'snip_c[{cur}]'] = snip.c
+snip.store.buffer['cur'] = cur + 1
+snip.rv='TEST'
+`
+endsnippet
+
+snippet inc "increment" 
+`!p
+if snip.store.tmp['todo', True]:
+	snip.rv = snip.store.buffer['i', 1]
+	snip.store.buffer.i += 1
+	snip.store.tmp.todo = False
+`
+endsnippet

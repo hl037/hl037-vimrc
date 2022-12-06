@@ -1,0 +1,9 @@
+
+
+snippet com "Command" b
+command! $1 call <SID>$1()
+function! <SID>$1()
+	$0
+endfunction
+endsnippet
+

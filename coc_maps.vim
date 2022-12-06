@@ -1,3 +1,8 @@
+if exists("g:loaded_cocmaps")
+  finish
+endif
+lef g:loaded_cocmaps=1
+
 "imap <C-Space> <c-n><c-p>
 
 " TextEdit might fail if hidden is not set.
@@ -14,12 +19,34 @@ set shortmess+=c
 " diagnostics appear/become resolved.
 set signcolumn=yes
 
-" Use tab for trigger completion with characters ahead and navigate.
-" NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
-" other plugin before putting this into your config.
-inoremap <silent><expr> <c-space>
-      \ pumvisible() ? "\<C-n>" :
-      \ coc#refresh()
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Autocomplete
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+set completeopt=longest,menuone
+"inoremap <expr> <CR> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+
+inoremap <silent><expr> <C-c> coc#pum#visible() ? coc#pum#cancel() : "\<C-c>"
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm() : "\<CR>"
+
+
+if has('nvim')
+  inoremap <silent><expr> <c-space> coc#pum#visible() ? coc#pum#next(1) : coc#refresh()
+else
+  inoremap <silent><expr> <c-@> coc#pum#visible() ? coc#pum#next(1) : coc#refresh()
+endif
+
+inoremap <silent><expr> <down> coc#pum#visible() ? coc#pum#next(1) : "\<down>"
+inoremap <silent><expr> <up> coc#pum#visible() ? coc#pum#prev(1) : "\<up>"
+
+" inoremap <expr> <C-n> pumvisible() ? '<C-n>' :
+"   \ '<C-n><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
+" 
+" inoremap <expr> <M-,> pumvisible() ? '<C-n>' :
+"   \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
+" 
+" inoremap <Nul> <c-x><c-o>
 
 function! s:check_back_space() abort
   let col = col('.') - 1
@@ -62,7 +89,7 @@ function! s:show_documentation()
 endfunction
 
 " Highlight the symbol and its references when holding the cursor.
-autocmd CursorHold * silent call CocActionAsync('highlight')
+" autocmd CursorHold * silent call CocActionAsync('highlight')
 
 " Symbol renaming.
 nmap <leader>r <Plug>(coc-rename)
@@ -81,11 +108,11 @@ augroup end
 
 " Applying codeAction to the selected region.
 " Example: `<leader>aap` for current paragraph
-xmap <leader>a  <Plug>(coc-codeaction-selected)
-nmap <leader>a  <Plug>(coc-codeaction-selected)
+" xmap <leader>a  <Plug>(coc-codeaction-selected)
+" nmap <leader>a  <Plug>(coc-codeaction-selected)
 
 " Remap keys for applying codeAction to the current line.
-nmap <leader>ac  <Plug>(coc-codeaction)
+" nmap <leader>ac  <Plug>(coc-codeaction)
 " Apply AutoFix to problem on the current line.
 nmap <leader>qf  <Plug>(coc-fix-current)
 

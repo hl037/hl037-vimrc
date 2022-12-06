@@ -1,0 +1,64 @@
+extends javascript
+
+
+snippet cl "class" b
+class $1{
+	$0
+}
+endsnippet
+
+snippet ecl "class" b
+export class $1{
+	$0
+}
+endsnippet
+
+snippet i "interface" b
+interface $1{
+	$0
+}
+endsnippet
+
+snippet ei "export interface" b
+export interface $1{
+	$0
+}
+endsnippet
+
+snippet c "constructor" b
+constructor($1){
+	$0
+}
+endsnippet
+
+snippet m "method" b
+$1($2){
+	$0
+}
+endsnippet
+
+snippet t "this" 
+this
+endsnippet
+
+snippet antlrlr "Antlr listener rule" b
+enter$1(ctx: $1Context$2) {
+	$3
+}
+
+exit$1(ctx: $1Context) {
+	$4
+}
+endsnippet
+
+snippet antlrilr "Antlr listener enter rule" b
+enter$1(ctx: $1Context$2) {
+	$3
+}
+endsnippet
+
+snippet antlrolr "Antlr listener rule" b
+exit$1(ctx: $1Context$2) {
+	$3
+}
+endsnippet

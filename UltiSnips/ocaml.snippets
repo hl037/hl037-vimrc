@@ -1,0 +1,130 @@
+global !p
+from vim_hl037.UltiSnips import *
+endglobal
+
+global !p
+
+def get_indent(l):
+	r = l.lstrip()
+	return len(l) - len(r), r
+
+
+def get_context():
+	line, col, *_ = snip.buffer.cursor
+	ind, _ = get_indent(snip.buffer[line])
+	for l in range(line, -1, -1):
+		p_ind, r = get_indent(snip.buffer[l])
+		if p_ind < ind:
+			if 'type' in r:
+				return 'type'
+			if 'match' in r or 'fun' in r:
+				return 'match'
+			return None
+
+endglobal
+
+snippet f "function" b
+let $1 = function
+	| $2 -> $0
+;;
+endsnippet
+
+snippet fi "let function in" b
+let $1 = function
+	| $2 -> $3
+in
+$0
+endsnippet
+
+snippet fm "function with match" b
+let $1 = match `!p
+args = t[1].split()
+if len(args) and args[0] == 'rec':
+	del args[0]
+if len(args) <= 1:
+	snip.rv = ''
+elif len(args) == 2:
+	snip.rv = args[1]
+else:
+	snip.rv = ', '.join(args[1:])
+` with
+	| $2 -> $0
+;;
+endsnippet
+
+snippet fmi "function with match" b
+let $1 = match `!p
+args = t[1].split()
+if len(args) and args[0] == 'rec':
+	del args[0]
+if len(args) <= 1:
+	snip.rv = ''
+elif len(args) == 2:
+	snip.rv = args[1]
+else:
+	snip.rv = ', '.join(args[1:])
+` with
+	| $2 -> $3
+in
+$0
+endsnippet
+
+snippet c "case" b
+| $1`!p
+if snip.c == '' :
+	snip.rv = {
+		'match' : ' -> ',
+		'type' : ' of ',
+		None : ''
+	}[get_context()]
+`$0
+endsnippet
+
+snippet | "case" bA
+| $1`!p
+if snip.c == '' :
+	snip.rv = {
+		'match' : ' -> ',
+		'type' : ' of ',
+		None : ''
+	}[get_context()]
+`$0
+endsnippet
+
+
+context "eol(snip)"
+snippet m "match" 
+(match $1 with
+	| $2 -> $0
+)
+endsnippet
+
+snippet l "let" b
+let $1 = $2 ;;$0
+endsnippet
+
+snippet ll "let long" b
+let $1 =
+	$2
+;;$0
+endsnippet
+
+snippet li "let in" b
+let $1 = $2
+in
+$0
+endsnippet
+
+snippet /ht(\d*)/ "h :: t" r
+h`!p snip.rv=match[1]` :: t`!p snip.rv=match[1]`
+endsnippet
+
+snippet t "type" b
+type $1 = $2;
+endsnippet
+
+snippet tt "long type" b
+type $1 = 
+	| $2 of $0
+;;
+endsnippet

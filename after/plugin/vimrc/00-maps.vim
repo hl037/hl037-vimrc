@@ -122,23 +122,7 @@ set encoding=utf8
 
 " Use Unix as the standard file type
 set ffs=unix,dos,mac
-colorscheme desert
-set background=dark
-highlight Normal ctermfg=8 ctermbg=Black
-highlight MatchParen ctermbg=238 ctermfg=190
-
-highlight DiffAdd cterm=none ctermbg=22
-highlight DiffDelete cterm=none ctermbg=52
-highlight DiffChange cterm=none ctermbg=17
-highlight DiffText cterm=none ctermbg=bg
-highlight cursorline cterm=None ctermbg=darkblue ctermfg=white guibg=darkblue guifg=white  
-highlight Pmenu ctermbg=017 ctermfg=grey
-highlight PmenuSel ctermbg=021 ctermfg=252
-
-" better readibility
-hi clear Search
-hi Search NONE
-hi Search ctermfg=black ctermbg=105
+colorscheme hl037
 
 	
 
@@ -148,8 +132,12 @@ hi Search ctermfg=black ctermbg=105
 " Turn backup off, since most stuff is in SVN, git et.c anyway...
 set nobackup
 set nowb
-set swapfile
-set directory=$HOME/.vim/swp//
+if has('nvim')
+  set swapfile
+  set directory=$HOME/.vim/swp//
+else
+  set noswapfile
+endif
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Text, tab and indent related
@@ -180,6 +168,7 @@ set wrap "Wrap lines
 " Super useful! From an idea by Michael Naumann
 vnoremap <silent> * :call VisualSelection('f')<CR>
 vnoremap <silent> # :call VisualSelection('b')<CR>
+vnoremap <silent> <leader>* :call VisualSelection('b')<CR>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -299,6 +288,8 @@ map <leader><space> :vimgrep // <C-R>%<C-A><right><right><right><right><right><r
 
 " When you press <leader>r you can search and replace the selected text
 vnoremap <silent> <leader><leader>r :call VisualSelection('replace')<CR>
+vnoremap <silent> <leader><leader>s :call VisualSelection('sub')<CR>
+vnoremap <silent> <leader><leader>n :call VisualSelection('normal')<CR>
 
 " Do :help cope if you are unsure what cope is. It's super useful!
 "
@@ -340,7 +331,7 @@ map <leader>s? z=
 map <leader>q :e ~/buffer<cr>
 
 " Toggle paste mode on and off
-map <leader>pp :setlocal paste!<cr>
+"map <leader>pp :setlocal paste!<cr>
 
 map <leader>bb :e #<cr>
 map <leader>bw :Bclose <cr>
@@ -367,4 +358,38 @@ nmap <Leader>o :!open "%"<cr><cr>
 " Quick copy paste all file
 nmap <leader><leader>y gg"+yG<c-o>
 nmap <leader><leader>p ggdG"+PG
+"nmap <leader><leader>mr :!make run<cr>
+nmap <leader><leader>mr :!konsole -e bash -c "make run ; read"<cr>
+"nmap <leader><leader>m<space> :!make<space>
+function! TTTKonsoleMake()
+  call CmdLine('!konsole -e bash -c "make _|_ ; read"')
+endfunction
+nmap <leader><leader>m<space> :call TTTKonsoleMake()<cr>
+"nmap <leader><leader>m<cr> :!make<cr>
+nmap <leader><leader>mr :!konsole -e bash -c "make; read"<cr>
+
+nmap <Leader><Leader>e <Plug>VimspectorBalloonEval
+xmap <Leader><Leader>e <Plug>VimspectorBalloonEval
+
+map <F4>         <Plug>VimspectorStop
+map <leader><F4> :VimspectorReset<cr>
+map <F5>         <Plug>VimspectorRestart
+map <silent> <leader><F5>         :call vimspector#Launch()<cr>
+map <F6>         <Plug>VimspectorPause
+map <F7>         <Plug>VimspectorAddFunctionBreakpoint
+map <F8>         <Plug>VimspectorToggleBreakpoint
+map <leader><F8> <Plug>VimspectorToggleConditionalBreakpoint
+map <F9>         <Plug>VimspectorContinue
+map <leader><F9> <Plug>VimspectorRunToCursor
+map <F10>        <Plug>VimspectorStepOver
+map <F11>        <Plug>VimspectorStepInto
+map <F12>        <Plug>VimspectorStepOut
+map -    <Plug>VimspectorUpFrame
+map +    <Plug>VimspectorDownFrame
+
+
+map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
+map <silent> <leader>ee :bufdo e!<cr>
+
+map <leader>a :VisMath()<Left>
 

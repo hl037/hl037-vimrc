@@ -1,3 +1,64 @@
+global !p
+# T = snip.store.tmp
+# B = snip.store.buffer
+# F = snip.store.file
+# S = snip.store.session
+# C = snip.store.common
+# I = snip.store.snippet
+# 
+# _once = None
+# 
+# def once():
+# 	global _once
+# 	if _once is None:
+# 		_once = T['once', True]
+# 		T.once = False
+# 	return _once
+# 
+# class StoreProxy(object):
+# 	def __init__(self, tab, store, key=None):
+# 		self.store = store
+# 		self.tab = tab
+# 		self.key = None
+# 		if key is not None:
+# 			self.__getitem__(key)
+# 	
+# 	def __getitem__(self, key):
+# 		if self.key is not None:
+# 			raise RuntimeError("Key already assigned")
+# 		if not isinstance(key, tuple):
+# 			key = key, ''
+# 		snip.rv = self.store[key]
+# 		self.key = key[0]
+# 	
+# 	def __getattr__(self, key):
+# 		return self.__getitem__(key)
+# 
+# class DummyProxy(object):
+# 	def __getitem__(self, key):
+# 		return None
+# 	def __getattr__(self, key):
+# 		return self.__getitem__(key)
+# 	
+# 
+# class TabMem(object):
+# 	def __call__(self, tab, store, key=None):
+# 		if once():
+# 			r = StoreProxy(tab, store, key)
+# 			I['_TabMemProxies', []].append(r)
+# 			return r
+# 		else :
+# 			return DummyProxy()
+# 	
+# 	def do(self):
+# 		for p in I['_TabMemProxies', []]:
+# 			if p.key is None:
+# 				raise RuntimeError('A tab_mem has no key')
+# 			p.store[p.key] = t[p.tab]
+# 
+# mem_tab = TabMem()
+# 	
+endglobal
 
 snippet hguard "Header Guard" b
 #ifndef `!p snip.rv = fn.upper().replace('.', '_')`
@@ -114,7 +175,7 @@ $0
 endsnippet
 
 snippet tn "typename" w
-typename
+typename 
 endsnippet
 
 snippet m "method" b
@@ -154,33 +215,154 @@ static inline $1($2){
 endsnippet
 
 snippet test "test header" b
-#include <cxxtest/TestSuite.h>
-endsnippet
+#define CATCH_CONFIG_MAIN
+#include <hl037/test.hpp>
 
-snippet mt "test method" b
-void test_$1(){
-	$2
+namespace test_$1 {
+
+$0
+
 }
 endsnippet
 
-snippet clt "class" b
-class Test$1 : public CxxTest::TestSuite{
-public:
+snippet tc "Test case" b
+TEST_CASE("$1"){
+	$0
+}
+endsnippet
+
+snippet ts "Test section" b
+SECTION("$1"){
+	$0
+}
+endsnippet
+
+snippet tr "Test Require" b
+REQUIRE($1)
+endsnippet
+
+snippet ptd "Parameterized test data" b
+DECLARE_PARAMS_SECTION(${1:`!p mem_tab(1, B, 'params_section')`}){
+
+DECLARE_PARAM_TYPE{
+	const char * name;
 	$2
 };
+
+DATA_CASE_TEST(PARAM_TYPE & param, $3){
+	$0
+}
+
+};
+`!p mem_tab.do()`
 endsnippet
 
-snippet tsu "Test set up" b
-void setUp(){
-	$1
-}
+snippet pt "Parameterized test" b
+BEGIN_PARAMS_SECTION(${1:`!p mem_tab(1, B, 'params_section') `})
+	DATA_CASE(${2:`!p mem_tab(2, B, 'data_case') `})$0
+END
+`!p mem_tab.do()`
 endsnippet
 
-snippet ttd "Test tear down" b
-void setDown(){
-	$1
-}
+snippet dc "Data case" b
+DATA_CASE`!p snip.rv='_n' if ',' in t[1] else ''`(${1:`!p mem_tab(1, B).data_case `})
+`!p mem_tab.do()`
 endsnippet
+
+snippet ddc "declare Data case" b
+DECLARE_DATA_CASE(${1:`!p mem_tab(1, B).data_case `}) {
+	$0
+};
+`!p mem_tab.do()`
+endsnippet
+
+snippet dcu "data case unit" b
+{
+	"$1",
+	$2
+},
+endsnippet
+
+# snippet test "test header" b
+# #include <criterion/criterion.h>
+# #include <criterion/parameterized.h>
+# 
+# $0
+# endsnippet
+# 
+# global !p
+# 
+# def test_suite_name(tab):
+# 	if once():
+# 		snip.rv=F["test_suite_name", ""]
+# 	T.test_suite_name = t[tab]
+# 
+# # def test_type_params(tab, step):
+# # 	if once():
+# # 		if step == B['test_param_last_step', step]:
+# # 			snip.rv = ''
+# # 		else :
+# # 			B.test_param_last_step = step
+# # 			snip.rv = B.test_type_params
+# # 	else :
+# # 		B.test_type_params = t[tab]
+# 
+# endglobal
+# 
+# snippet ft "test" b
+# Test(${1:`!p test_suite_name(1)`}, $2){
+# 	$0
+# }
+# endsnippet
+# 
+# snippet pt "test" b
+# `!p type_ = f'{t[1]}__{t[2]}_params_t'`
+# struct `!p snip.rv = type_` {
+# 	$3
+# };
+# 
+# ParameterizedTestParameters(${1:`!p test_suite_name(1)`}, $2) {
+# 	static `!p snip.rv = type_` params[] = {
+# 	};
+# 
+# 	size_t nb_params = sizeof(params) / sizeof(decltype(params[0]));
+# 	return cr_make_param_array(decltype(params[0]), params, nb_params);
+# }
+# 
+# ParameterizedTest(`!p snip.rv = type_` *param, $1, $2) {
+# 	$0
+# }
+# endsnippet
+
+
+# snippet test "test header" b
+# #include <cxxtest/TestSuite.h>
+# endsnippet
+# 
+# snippet mt "test method" b
+# void test_$1(){
+# 	$2
+# }
+# endsnippet
+# 
+# snippet clt "class" b
+# class Test$1 : public CxxTest::TestSuite{
+# public:
+# 	$2
+# };
+# endsnippet
+# 
+# snippet tsu "Test set up" b
+# void setUp(){
+# 	$1
+# }
+# endsnippet
+# 
+# snippet ttd "Test tear down" b
+# void setDown(){
+# 	$1
+# }
+# endsnippet
 
 snippet c "const"
 const $1 = $2;
@@ -188,6 +370,10 @@ endsnippet
 
 snippet cc "constexpr"
 constexpr $1 = $2;
+endsnippet
+
+snippet cr "const reference" i
+const $1 & $2
 endsnippet
 
 snippet sc "static const"
@@ -198,9 +384,57 @@ snippet scc "static constexpr"
 static constexpr $1 = $2;
 endsnippet
 
+priority 1
+snippet 'cv\*' "const void *" rA 
+const void * $0
+endsnippet
+
+priority 0
+snippet 'v\*' "void *" rA 
+void * $0
+endsnippet
+
+priority 1
+snippet 'cc\*' "const char *" rA 
+const char * $0
+endsnippet
+
+priority 0
+snippet 'c\*' " char *" rA 
+char * $0
+endsnippet
+
+priority 1
+snippet 'cb\*' "const unsigned char *" rA 
+const unsigned char * $0
+endsnippet
+
+priority 0
+snippet 'b\*' "unsigned char *" rA 
+unsigned char * $0
+endsnippet
+
 
 snippet "for " "for" brA
 for($1 ; $2 ; $3){
+	$0
+}
+endsnippet
+
+snippet "for<" "for" brA
+`!p
+m = re.search(r'\b(\w+)\s*\=', t[1])
+I[1] = m[1] if m else (t[1] if ' ' not in t[1] else '')
+`for($1 ; `!p snip.rv=I[1]` < $2 ; ++`!p snip.rv=I[1]`){
+	$0
+}
+endsnippet
+
+snippet "for>" "for" brA
+`!p
+m = re.search(r'\b(\w+)\s*\=', t[1])
+I[1] = m[1] if m else (t[1] if ' ' not in t[1] else '')
+`for($1 ; `!p snip.rv=I[1]` >= $2 ; --`!p snip.rv=I[1]`){
 	$0
 }
 endsnippet
@@ -276,7 +510,7 @@ reinterpret_cast<$1>($2)
 endsnippet
 
 snippet "ccast<" "const_cast<>()" rA
-reinterpret_cast<$1>($2)
+const_cast<$1>($2)
 endsnippet
 
 snippet "sc<" "static_cast<>()" rA
@@ -303,4 +537,8 @@ snippet n "nmaespace" b
 namespace $1{
 $2
 }
+endsnippet
+
+snippet "assert " "assert" rbA
+TS_ASSERT_${1:EQUALS}($2, $3);
 endsnippet
