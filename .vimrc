@@ -181,6 +181,8 @@ else
   endif
 endif
 
+set maxmempattern=100000
+
 
 " Indent line
 
@@ -339,7 +341,7 @@ let g:pymode_syntax_all = 1
 
 let g:lua_complete_omni = 1
 
-set guicursor=a:blinkon1
+set guicursor=a:blinkon0
 
 "Plugin 'SirVer/ultisnips'
 let g:UltiSnipsExpandTrigger = "<tab>"
@@ -736,3 +738,48 @@ endfunction
 " endfunction
 " 
 " au InsertChange * :call Ttt()
+
+
+function SwCase_camel(type)
+  call switchcase#switchcase(a:type, 'camel')
+endfunction
+
+function SwCase_Camel(type)
+  call switchcase#switchcase(a:type, 'Camel')
+endfunction
+
+function SwCase_snake(type)
+  call switchcase#switchcase(a:type, 'snake')
+endfunction
+
+function SwCase_Snake(type)
+  call switchcase#switchcase(a:type, 'Snake')
+endfunction
+
+function SwCase_SNAKE(type)
+  call switchcase#switchcase(a:type, 'SNAKE')
+endfunction
+
+map <leader>cc <Esc>:set opfunc=SwCase_camel<CR>g@
+map <leader>cC <Esc>:set opfunc=SwCase_Camel<CR>g@
+map <leader>c_ <Esc>:set opfunc=SwCase_snake<CR>g@
+map <leader>cs <Esc>:set opfunc=SwCase_Snake<CR>g@
+map <leader>cS <Esc>:set opfunc=SwCase_SNAKE<CR>g@
+
+
+"""""""""""""""
+" Window zoom
+"""""""""""""""
+function! ToggleZoom(toggle)
+  if exists("t:restore_zoom") && (t:restore_zoom.win != winnr() || a:toggle == v:true)
+      exec t:restore_zoom.cmd
+      unlet t:restore_zoom
+  elseif a:toggle
+      let t:restore_zoom = { 'win': winnr(), 'cmd': winrestcmd() }
+      vert resize | resize
+  endi
+endfunction
+nnoremap <silent> <c-w>o :call ToggleZoom(v:true)<CR>
+augroup restorezoom
+    au WinEnter * silent! :call ToggleZoom(v:false)
+augroup END

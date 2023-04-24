@@ -269,8 +269,24 @@ console.log({
 });
 endsnippet
 
+snippet DDvar "console.log({})" b
+console.log('$1', {
+	'$2' : $2,$3
+});
+endsnippet
+
+snippet TDvar "console.log({})" b
+console.log('TTT $1', {
+	'$2' : $2,$3
+});
+endsnippet
+
 snippet D "console.log()" b
 console.log('$1');
+endsnippet
+
+snippet TD "console.log()" b
+console.log('TTT $1');
 endsnippet
 
 snippet dvar "line of Dvar" b

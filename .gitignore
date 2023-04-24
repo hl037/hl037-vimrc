@@ -3,4 +3,5 @@ bundle
 !bundle/Vundle.vim
 !bundle/me
 *.swp
+view
 __pycache__

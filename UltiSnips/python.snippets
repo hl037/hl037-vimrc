@@ -47,6 +47,47 @@ def __$1__(cls$2):
 endsnippet
 
 context "eol(snip)"
+snippet am "class method" b
+async def $1(self$2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet am_ "class magical method" b
+async def __$1__(self$2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet asm "static class method" b
+@staticmethod
+async def $1($2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet asm_ "static magic method" b
+@staticmethod
+async def __$1__(cls$2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet acm "class class method" b
+@classmethod
+async def $1(cls$2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet acm_ "class magic method" b
+@classmethod
+async def __$1__(cls$2):
+	$3
+endsnippet
+
+
+context "eol(snip)"
 snippet mprop "Property" b
 @property
 def $1(self):
@@ -90,6 +131,12 @@ endsnippet
 context "eol(snip)"
 snippet f "function" b
 def $1($2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet af "function" b
+async def $1($2):
 	$3
 endsnippet
 
@@ -188,6 +235,10 @@ endsnippet
 
 snippet p "print" b
 print('$1')$3
+endsnippet
+
+snippet Tpf "Tpf" b
+print(f'TTT {$1=}')
 endsnippet
 
 snippet pf "print f''" b
@@ -363,8 +414,20 @@ def test_$1($2):
 endsnippet
 
 context "eol(snip)"
+snippet aft "test function" b
+async def test_$1($2):
+	$3
+endsnippet
+
+context "eol(snip)"
 snippet mt "test method" b
 def test_$1(self$2):
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet amt "test method" b
+async def test_$1(self$2):
 	$3
 endsnippet
 
