@@ -561,11 +561,16 @@ endsnippet
 
 # SQLA
 
+# snippet mod "Model" b
+# @export
+# class $1(PrefixerBase):
+# 	__tablename_suffix__ = '$1'
+# 	
+# 	id = sa.Column(Types.Id, primary_key = True)
+# 	$0
+# endsnippet
 snippet mod "Model" b
-@export
 class $1(PrefixerBase):
-	__tablename_suffix__ = '$1'
-	
 	id = sa.Column(Types.Id, primary_key = True)
 	$0
 endsnippet
