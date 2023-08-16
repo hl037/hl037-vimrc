@@ -249,6 +249,10 @@ snippet pf "print f''" b
 print(f'$1')$3
 endsnippet
 
+snippet ipp "import pprint" b
+from pprint import pprint
+endsnippet
+
 snippet pp "pprint" b
 pprint($1)$3
 endsnippet
@@ -288,14 +292,26 @@ endsnippet
 
 
 context "eol(snip)"
-snippet "for " "for" brA
+snippet "\bfor " "for" brA
 for $1 in $2 :
 	$3
 endsnippet
 
 context "eol(snip)"
-snippet "fors " "fors" brA
+snippet "\bfors " "fors" brA
 for $1 in $1s :
+	$2
+endsnippet
+
+context "eol(snip)"
+snippet "\bafor " "for" brA
+async for $1 in $2 :
+	$3
+endsnippet
+
+context "eol(snip)"
+snippet "\bafors " "fors" brA
+async for $1 in $1s :
 	$2
 endsnippet
 
