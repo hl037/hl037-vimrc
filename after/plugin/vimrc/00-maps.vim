@@ -357,7 +357,7 @@ nmap <Leader>o :!open "%"<cr><cr>
 
 " Quick copy paste all file
 nmap <leader><leader>y gg"+yG<c-o>
-nmap <leader><leader>p ggdG"+PG
+nmap <leader><leader>p ggdG"+PGdd
 "nmap <leader><leader>mr :!make run<cr>
 nmap <leader><leader>mr :!konsole -e bash -c "make run ; read"<cr>
 "nmap <leader><leader>m<space> :!make<space>
