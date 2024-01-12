@@ -1,0 +1,7 @@
+{
+  "typescript.showUnused": false,
+  "javascript.showUnused": false,
+  "clangd.arguments": ["-j", "12", "--malloc-trim", "--all-scopes-completion", "--enable-config", "--log=verbose"],
+  "clangd.compilationDatabaseCandidates": ["${workspaceFolder}/build", "${fileDirname}"],
+  "clangd.disableSnippetCompletion" : true
+}

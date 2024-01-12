@@ -1,10 +1,13 @@
 import re
 
 def blockStart(snip, pos=None) -> tuple[str, int]:
+  """
+  Return the first line of the block and its index
+  """
   if pos is None :
     pos = snip.line
   line = snip.buffer[pos]
-  i = next(( i for i, a in enumerate(line) if a not in ' \t' ), len(line))
+  i = next(( i for i, a in enumerate(line) if a not in ' \t' ), len(line)) # first non blank char
   indent = line[:i]
   return next(( (l, pos - i) for i in range(pos) if (l := snip.buffer[pos - i]).strip() and not l.startswith(indent) ), (None, 0)) # type: str
   
@@ -48,6 +51,9 @@ def inHeader(snip):
       if comind == -1 :
         break
   return True
+
+def not_comment(snip):
+  return '#' not in snip.before
 
 
 # from dataclasses import dataclass

@@ -290,6 +290,7 @@ snippet { "dict_comp" i
 { $3 : $4 for $1 in $2 } $5
 endsnippet
 
+priority 10
 
 context "eol(snip)"
 snippet "\bfor " "for" brA
@@ -386,6 +387,37 @@ endsnippet
 snippet 'l:' "lambda" r
 lambda $1: $2
 endsnippet
+
+priority 0
+context "not_comment(snip)"
+snippet "\bfor" "comprehension for" r
+for $1 in $2
+endsnippet
+
+priority 1
+context "not_comment(snip)"
+snippet "\[for" "comprehension for" r
+[ $3 for $1 in $2 ]
+endsnippet
+
+context "not_comment(snip)"
+snippet "\{for" "comprehension for" r
+{ $3 for $1 in $2 }
+endsnippet
+
+
+context "not_comment(snip)"
+snippet "\(for" "comprehension for" r
+( $3 for $1 in $2 )
+endsnippet
+
+context "not_comment(snip)"
+snippet "\{for:" "comprehension for" r
+{ $3: $4 for $1 in $2 }
+endsnippet
+
+
+priority 0
 
 # snippet test "test case" b
 # import unittest as ut
@@ -889,3 +921,11 @@ snippet iic "import iceream" b
 from icecream import ic
 endsnippet
 
+snippet tck "Import type checking" b
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING :
+	$1
+endsnippet

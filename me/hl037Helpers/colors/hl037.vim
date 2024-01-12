@@ -63,7 +63,9 @@ let g:colors_name = "hl037"
 " gui colors
 hi Normal guifg=#AAAAAA guibg=Black
 hi MatchParen guibg=#444444 guifg=#d7ff00
-hi NonText	guifg=darkblue guibg=#0A0A0A
+hi NonText	guifg=darkblue guibg=Black
+hi EndOfBuffer guifg=darkblue guibg=Black
+"hi VertSplit guifg=darkblue guibg=Black
 
 
 
@@ -105,7 +107,7 @@ hi Error	guifg=#8D8D8D guibg=#C00000
 hi Normal ctermfg=8 ctermbg=Black
 hi MatchParen ctermbg=238 ctermfg=190
 
-hi SpecialKey	ctermfg=darkgreen guifg= guibg=
+hi SpecialKey	ctermfg=darkgreen
 hi NonText	cterm=bold ctermfg=darkblue
 hi Directory	ctermfg=darkcyan
 hi ErrorMsg	cterm=bold ctermfg=7 ctermbg=1

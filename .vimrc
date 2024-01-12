@@ -170,11 +170,11 @@ if !has('nvim')
   map <esc>[1;5C <c-Right>
   map <esc>[1;5D <c-left>
   map <esc>[1;5D <c-Left>
-  " if $TERM =~ '256'
-  "   set termguicolors
+  if $TERM =~ '256'
+    set termguicolors
   "   let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
   "   let &t_8b = "\<Esc>[48:2:%lu:%lu:%lum"
-  " endif
+  endif
 else
   if $TERM =~ '256'
     set termguicolors
@@ -679,7 +679,8 @@ fun! s:ntfind()
 endfun
 autocmd BufEnter * call s:ntfind()
 
-
+let g:coc_config_home = '~/.vim/coc'
+let g:coc_data_home = '~/.vim/coc'
 
 function! s:disable_coc_for_type()
   if index(g:coc_filetypes_enable, &filetype) == -1
@@ -760,11 +761,11 @@ function SwCase_SNAKE(type)
   call switchcase#switchcase(a:type, 'SNAKE')
 endfunction
 
-map <leader>cc <Esc>:set opfunc=SwCase_camel<CR>g@
-map <leader>cC <Esc>:set opfunc=SwCase_Camel<CR>g@
-map <leader>c_ <Esc>:set opfunc=SwCase_snake<CR>g@
-map <leader>cs <Esc>:set opfunc=SwCase_Snake<CR>g@
-map <leader>cS <Esc>:set opfunc=SwCase_SNAKE<CR>g@
+map <leader>cc <Cmd>set opfunc=SwCase_camel<CR>g@
+map <leader>cC <Cmd>set opfunc=SwCase_Camel<CR>g@
+map <leader>c_ <Cmd>set opfunc=SwCase_snake<CR>g@
+map <leader>cs <Cmd>set opfunc=SwCase_Snake<CR>g@
+map <leader>cS <Cmd>set opfunc=SwCase_SNAKE<CR>g@
 
 
 """""""""""""""
