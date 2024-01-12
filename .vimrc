@@ -62,6 +62,16 @@ endfunction
 
 
 let g:coc_filetypes_enable = ['javascript', 'vue', 'typescript', 'html', 'css', 'scss', 'sass', 'cpp', 'c']
+let g:coc_global_extensions =
+      \[
+      \  '@yaegassy/coc-typescript-vue-plugin',
+      \  '@yaegassy/coc-volar',
+      \  '@yaegassy/coc-volar-tools',
+      \  'coc-clangd',
+      \  'coc-json',
+      \  'coc-tsserver'
+      \]
+
 
 call plug#begin('~/.cache/vim/plugged')
 
