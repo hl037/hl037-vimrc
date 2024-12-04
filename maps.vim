@@ -421,3 +421,7 @@ map <leader>c_ <Esc>:set opfunc=SwCase_snake<CR>g@
 map <leader>cs <Esc>:set opfunc=SwCase_Snake<CR>g@
 map <leader>cS <Esc>:set opfunc=SwCase_SNAKE<CR>g@
 
+" To avoid problems with alt
+if !has('nvim')
+  inoremap <nowait> <Esc> <Esc>
+endif

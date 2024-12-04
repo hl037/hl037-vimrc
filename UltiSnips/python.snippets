@@ -146,7 +146,7 @@ endsnippet
 
 context "eol(snip)"
 snippet si "self initialization" b
-self.$1 = $1
+self.`!p snip.rv=t[1]` = $1
 endsnippet
 
 
@@ -364,11 +364,20 @@ case _ :
 	$2
 endsnippet
 
+priority 0
 context "eol(snip)"
 snippet "with " "with" brA
 with $1 :
 	$2
 endsnippet
+
+priority 1
+context "eol(snip)"
+snippet "awith " "awith" brA
+async with $1 :
+	$2
+endsnippet
+
 
 context "eol(snip)"
 snippet "try " "try" brA
@@ -414,6 +423,10 @@ endsnippet
 context "not_comment(snip)"
 snippet "\{for:" "comprehension for" r
 { $3: $4 for $1 in $2 }
+endsnippet
+
+snippet a "assert" b
+assert $0
 endsnippet
 
 

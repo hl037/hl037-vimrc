@@ -145,6 +145,7 @@ else
 endif
 
 Plug 'iloginow/vim-stylus'
+Plug 'kmonad/kmonad-vim'
 
 Plug 'Yggdroot/indentLine'
 Plug '~/.vim/me/maw'
@@ -164,22 +165,31 @@ syntax enable
 if !has('nvim')
   set ttymouse=sgr
   set clipboard+=unnamedplus
-  map <esc>OA <up>
-  map <esc>OA <Up>
-  map <esc>OB <down>
-  map <esc>OB <Down>
-  map <esc>OC <right>
-  map <esc>OC <Right>
-  map <esc>OD <left>
-  map <esc>OD <Left>
-  map <esc>[1;5A <c-up>
-  map <esc>[1;5A <c-Up>
-  map <esc>[1;5B <c-down>
-  map <esc>[1;5B <c-Down>
-  map <esc>[1;5C <c-right>
-  map <esc>[1;5C <c-Right>
-  map <esc>[1;5D <c-left>
-  map <esc>[1;5D <c-Left>
+  set <up>=OA 
+  set <Up>=OA 
+  set <down>=OB 
+  set <Down>=OB 
+  set <right>=OC 
+  set <Right>=OC 
+  set <left>=OD 
+  set <Left>=OD 
+  " set <c-up>=[1;5A 
+  " set <c-Up>=[1;5A 
+  " set <c-down>=[1;5B 
+  " set <c-Down>=[1;5B 
+  set <c-right>=[1;5C 
+  set <c-Right>=[1;5C 
+  set <c-left>=[1;5D 
+  set <c-Left>=[1;5D 
+  " Configure alt keys
+  let c='a'
+  while c <= 'z'
+    exec "set <m-".c.">=\e".c
+    exec "imap \e".c." <m-".c.">"
+    let c = nr2char(1+char2nr(c))
+  endw
+  set timeout timeoutlen=3000 ttimeout ttimeoutlen=50
+  
   if $TERM =~ '256'
     set termguicolors
   "   let &t_8f = "\<Esc>[38:2:%lu:%lu:%lum"
@@ -223,6 +233,14 @@ let g:jedi#rename_command = "<leader>r"
 set completeopt=menuone,longest
 
 let g:python_highlight_space_errors = 0
+
+let g:python_indent = {}
+let g:python_indent.open_paren = 'shiftwidth()'
+let g:python_indent.nested_paren = 'shiftwidth()'
+let g:python_indent.continue = 'shiftwidth()'
+let g:python_indent.closed_paren_align_last_line = v:false
+let g:python_indent.searchpair_timeout = 500
+let g:python_indent.disable_parentheses_indenting = v:false
 
 
 

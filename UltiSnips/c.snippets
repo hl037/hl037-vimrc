@@ -1,11 +1,18 @@
 global !p
+from vim_hl037.UltiSnips import *
+
+def useVarNameAssignment(plc):
+	@recompute(plc)
+	def op(snip, t):
+		m = re.search(r'\b(\w+)\s*\=', t[plc])
+		return m[plc] if m else (t[plc] if ' ' not in t[plc] else '')
+	return op
+		
 # T = snip.store.tmp
 # B = snip.store.buffer
 # F = snip.store.file
 # S = snip.store.session
 # C = snip.store.common
-# I = snip.store.snippet
-# 
 # _once = None
 # 
 # def once():
@@ -58,8 +65,6 @@ global !p
 # 
 # mem_tab = TabMem()
 # 	
-from vim_hl037.UltiSnips import *
-from vim_hl037.UltiSnips.python import *
 
 endglobal
 
@@ -98,6 +103,13 @@ endsnippet
 context "eol(snip)"
 snippet "#d " "#define" brA
 #define $1 $2
+endsnippet
+
+context "eol(snip)"
+snippet "#did " "#ifndef #define" brA
+#ifndef $1
+#define $1 $2
+#endif
 endsnippet
 
 context "eol(snip)"
@@ -462,20 +474,16 @@ endsnippet
 
 context "eol(snip)"
 snippet "for<" "for" brA
-`!p
-m = re.search(r'\b(\w+)\s*\=', t[1])
-I[1] = m[1] if m else (t[1] if ' ' not in t[1] else '')
-`for($1 ; `!p snip.rv=I[1]` < $2 ; ++`!p snip.rv=I[1]`){
+`!p var = useVarNameAssignment(1)
+`for($1 ; `!p snip.rv=var(snip, t)` < $2 ; ++`!p snip.rv=var(snip, t)`){
 	$0
 }
 endsnippet
 
 context "eol(snip)"
 snippet "for>" "for" brA
-`!p
-m = re.search(r'\b(\w+)\s*\=', t[1])
-I[1] = m[1] if m else (t[1] if ' ' not in t[1] else '')
-`for($1 ; `!p snip.rv=I[1]` >= $2 ; --`!p snip.rv=I[1]`){
+`!p var = useVarNameAssignment(1)
+`for($1 ; `!p snip.rv=var[1]` >= $2 ; --`!p snip.rv=var[1]`){
 	$0
 }
 endsnippet
