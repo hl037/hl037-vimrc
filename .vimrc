@@ -60,66 +60,35 @@ function! BuildYCM(info)
   endif
 endfunction
 
-
-let g:coc_filetypes_enable = ['javascript', 'vue', 'typescript', 'html', 'css', 'scss', 'sass', 'cpp', 'c']
-let g:coc_global_extensions =
-      \[
-      \  '@yaegassy/coc-typescript-vue-plugin',
-      \  '@yaegassy/coc-volar',
-      \  '@yaegassy/coc-volar-tools',
-      \  'coc-clangd',
-      \  'coc-json',
-      \  'coc-tsserver'
-      \]
-
-
 call plug#begin('~/.cache/vim/plugged')
 
 Plug '~/.vim/me/hl037report'
 
 "Plug 'Shougo/vimshell'
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}
 Plug 'Shougo/deol.nvim'
 Plug 'Shougo/vimproc.vim', {'do' : 'make', 'merged':0}
 Plug 'tpope/vim-abolish'
-Plug 'kien/ctrlp.vim'
 Plug 'vim-scripts/Emmet.vim'
 Plug 'scrooloose/nerdtree'
 Plug 'unkiwii/vim-nerdtree-sync'
 Plug '/usr/share/vim/vimfiles'
-Plug 'junegunn/fzf.vim'
+"Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-fugitive'
 Plug 'vim-scripts/L9'
-"Plug 'nvie/vim-pep8'
-Plug 'scrooloose/syntastic'
-"Plug 'bling/vim-airline'
-"Plug 'bling/vim-bufferline'
 Plug 'itchyny/lightline.vim'
-"Plug 'evidens/vim-twig'
 Plug 'Harenome/vim-mipssyntax'
-"Plug 'yegappan/grep'
-"Plug 'ternjs/tern_for_vim', 'for':'javascript'
-"Plug 'Valloric/YouCompleteMe', {'do':function('BuildYCM') , 'for':['javascript', 'vue']}
-Plug 'posva/vim-vue'
 Plug 'dpelle/vim-Grammalecte'
 Plug 'dpelle/vim-LanguageTool'
-Plug 'xolox/vim-misc'
-Plug 'xolox/vim-lua-ftplugin', {'for': 'lua'}
-
 Plug 'lervag/vimtex', {'for':['latex', 'tex']}
 Plug 'wesQ3/vim-windowswap'
-Plug 'kana/vim-textobj-user'
-Plug 'bps/vim-textobj-python', {'for':'javascript'}
-Plug 'neoclide/coc.nvim', {'branch': 'release', 'for':g:coc_filetypes_enable}
-Plug 'puremourning/vimspector', {'for' : ['c', 'cpp', 'python']}
 Plug 'peterhoeg/vim-qml', {'for': ['qml']}
 Plug 'dbakker/vim-paragraph-motion'
 "Plug 'sheerun/vim-polyglot'
 Plug 'dylon/vim-antlr'
 
    """""""""""""""""""""""""""""""""""""
-Plug 'davidhalter/jedi-vim', {'for':'python'}
-"Plug 'python-mode/python-mode'
-"Plugin 'me', {'pinned':1 
+"Plug 'davidhalter/jedi-vim', {'for':'python'}
 "Plug 'hl037/vim-visualHtml', {'merged': 0
 """""""""""""""""""""""""""""""""""""
 "Plug 'SirVer/ultisnips'
@@ -127,14 +96,14 @@ Plug '~/projects/sources/ultisnips'
 "Plug '~/projects/sources/ultisnps-remote_debug'
 
    """""""""""""""""""""""""""""""""""""
-Plug 'godlygeek/tabular'
-Plug 'tommcdo/vim-kangaroo'
+Plug 'godlygeek/tabular' " Tables
+Plug 'tommcdo/vim-kangaroo' " jump stack
 
    """""""""""""""""""""""""""""""""""""
 Plug 'tpope/vim-repeat'
 Plug 'tpope/vim-surround'
 Plug 'senderle/restoreview'
-Plug 'AndrewRadev/sideways.vim'
+Plug 'AndrewRadev/sideways.vim' " Move expr in list
    """""""""""""""""""""""""""""""""""""
 if !has('nvim')
    Plug 'https://github.com/wgurecky/vimSum.git'
@@ -142,19 +111,39 @@ if !has('nvim')
    Plug 'roxma/vim-hug-neovim-rpc'
 else
    Plug 'https://github.com/wgurecky/vimSum.git', { 'do' : ':UpdateRemotePlugins' }
+   """""""""""""""""""""""""""""""""""""
+   " Auto completion
+   Plug 'williamboman/mason.nvim'
+   Plug 'williamboman/mason-lspconfig.nvim'
+   Plug 'neovim/nvim-lspconfig'
+   Plug 'hrsh7th/cmp-nvim-lsp'
+   Plug 'hrsh7th/cmp-buffer'
+   Plug 'hrsh7th/cmp-path'
+   Plug 'hrsh7th/cmp-cmdline'
+   Plug 'hrsh7th/nvim-cmp'
+   Plug 'quangnguyen30192/cmp-nvim-ultisnips'
+   Plug 'ray-x/lsp_signature.nvim'
 endif
+
+Plug 'nvim-lua/plenary.nvim'
+Plug 'nvim-telescope/telescope.nvim', { 'branch': '0.1.x' }
+Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
+
 
 Plug 'iloginow/vim-stylus'
 Plug 'kmonad/kmonad-vim'
+   """""""""""""""""""""""""""""""""""""
 
 Plug 'Yggdroot/indentLine'
 Plug '~/.vim/me/maw'
-Plug '~/.vim/me/fzf-hl037'
+"Plug '~/.vim/me/fzf-hl037'
 Plug '~/.vim/me/hl037Helpers'
 
 call plug#end()
 
 source ~/.vim/supercontrol.vim
+
+luafile ~/.vim/.nvimrc.lua
 
 set vdir=~/.vim/view/
 
@@ -202,6 +191,7 @@ else
 endif
 
 set maxmempattern=100000
+setglobal nomodeline
 
 
 " Indent line
@@ -252,60 +242,63 @@ inoremap <c-x><c-k> <c-x><c-k>
 let g:NERDTreeMouseMode = 3
 let g:NERDTreeShowHidden = 1
 
-
-" Start autocompletion after 4 chars
-let g:ycm_min_num_of_chars_for_completion = 3
-let g:ycm_min_num_identifier_candidate_chars = 3
-let g:ycm_enable_diagnostic_highlighting = 0
-
-let g:ycm_key_invoke_completion = '<C-Space>'
-let g:ycm_key_list_select_completion = ['<Down>', '<C-Space>']
-let g:ycm_key_list_stop_completion = ['<Return>']
-let g:ycm_filetype_whitelist = { 'javascript': 1, 'vue' : 1}
-let g:ycm_filetype_blacklist = { 'python': 1, 'php' : 1 }
-" Don't show YCM's preview window
-"set completeopt-=preview
-"let g:ycm_add_preview_to_completeopt = 0
-
 let g:ctrlp_map = ''
 let g:ctrlp_working_path_mode = 'ra'
 let g:ctrlp_buffer_func = { 'enter': 'CtrlP_HL_enter', }
 
-"nmap <leader>ff :CtrlP<cr>
-nmap <leader>fff :Files g:global_cwd<cr>
-nmap <leader>ffb :Buffers<cr>
-nmap <leader>fll :Lines<cr>
-nmap <leader>flb :BLines<cr>
-nmap <leader>flg :Rg<cr>
+" nmap <leader>ff :CtrlP<cr>
+" nmap <leader>fff :Files g:global_cwd<cr>
+" nmap <leader>ffb :Buffers<cr>
+" nmap <leader>fll :Lines<cr>
+" nmap <leader>flb :BLines<cr>
+" nmap <leader>flg :Rg<cr>
+" 
+" "nmap <leader>; :Files<cr>
+" "nmap <leader>: :Buffers<cr>
+" "nmap <leader>ff :Files<cr>
+" "nmap <leader>fb :Buffers<cr>
+" "nmap <leader>fg :BLines<cr>
+" "nmap <leader>fl :BLines<cr>
+" 
 
-"nmap <leader>; :Files<cr>
-"nmap <leader>: :Buffers<cr>
-"nmap <leader>ff :Files<cr>
-"nmap <leader>fb :Buffers<cr>
-"nmap <leader>fg :BLines<cr>
-"nmap <leader>fl :BLines<cr>
+nmap <leader>fll <cmd>lua FuzzyFindFiles{}<cr>
+nmap <leader>flb <cmd>Telescope current_buffer_fuzzy_find<cr>
+nmap <leader>fff <cmd>Telescope find_files<cr>
+nmap <leader>ffb <cmd>Telescope buffers<cr>
+
 
 nmap <leader>;          <leader>fll
-nmap <leader><leader>;  <leader>flg
+nmap <leader><leader>;  <leader>flb
 nmap <leader>: <leader>fff
 nmap <leader><leader>: <leader>ffb
-nmap <leader>! <leader>ffb
+nmap <leader>! <cmd>Telescope lsp_dynamic_workspace_symbols<cr>
+nmap <leader><leader>! <cmd>Telescope lsp_document_symbols<cr>
+
+nmap <leader>gg <cmd>Telescope lsp_definitions<cr>
+nmap <leader><leader>g <cmd>Telescope lsp_definitions<cr>
+nmap <leader>gr <cmd>Telescope lsp_references<cr>
+nmap <leader>gi <cmd>Telescope lsp_incoming_calls<cr>
+nmap <leader>go <cmd>Telescope lsp_outgoing_calls<cr>
+nmap <leader>gs <cmd>Telescope lsp_dynamic_workspace_symbols<cr>
+nmap <leader>gy <cmd>Telescope lsp_implementations<cr>
+nmap <leader>gt <cmd>Telescope lsp_lsp_type_definitions<cr>
+nmap <leader>ss <cmd>Telescope spell_suggest<cr>
 
 
-let g:fzf_colors = {
-  \ 'fg':      ['fg', 'Normal'],
-  \ 'bg':      ['bg', 'Normal'],
-  \ 'hl':      ['fg', 'Comment'],
-  \ 'fg+':     ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
-  \ 'bg+':     ['bg', 'CursorLine', 'CursorColumn'],
-  \ 'hl+':     ['fg', 'Statement'],
-  \ 'info':    ['fg', 'PreProc'],
-  \ 'border':  ['fg', 'Ignore'],
-  \ 'prompt':  ['fg', 'Conditional'],
-  \ 'pointer': ['fg', 'Exception'],
-  \ 'marker':  ['fg', 'Keyword'],
-  \ 'spinner': ['fg', 'Label'],
-  \ 'header':  ['fg', 'Comment'] }
+" let g:fzf_colors = {
+"   \ 'fg':      ['fg', 'Normal'],
+"   \ 'bg':      ['bg', 'Normal'],
+"   \ 'hl':      ['fg', 'Comment'],
+"   \ 'fg+':     ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
+"   \ 'bg+':     ['bg', 'CursorLine', 'CursorColumn'],
+"   \ 'hl+':     ['fg', 'Statement'],
+"   \ 'info':    ['fg', 'PreProc'],
+"   \ 'border':  ['fg', 'Ignore'],
+"   \ 'prompt':  ['fg', 'Conditional'],
+"   \ 'pointer': ['fg', 'Exception'],
+"   \ 'marker':  ['fg', 'Keyword'],
+"   \ 'spinner': ['fg', 'Label'],
+"   \ 'header':  ['fg', 'Comment'] }
 
 inoremap <c-right> <c-i>
 inoremap <c-left> <c-o>
@@ -706,22 +699,6 @@ fun! s:ntfind()
   endif
 endfun
 autocmd BufEnter * call s:ntfind()
-
-let g:coc_config_home = '~/.vim/coc'
-let g:coc_data_home = '~/.vim/coc'
-
-function! s:disable_coc_for_type()
-  if index(g:coc_filetypes_enable, &filetype) == -1
-    :silent! CocDisable
-  else
-    :silent! CocEnable
-  endif
-endfunction
-
-augroup CocGroup
- autocmd!
- autocmd BufNew,BufEnter,BufAdd,BufCreate * call s:disable_coc_for_type()
-augroup end
 
 command! GetColor call <SID>GetColor()
 function! <SID>GetColor()

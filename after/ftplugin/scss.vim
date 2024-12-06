@@ -24,5 +24,3 @@ endfunction
 nmap <silent> <leader>ee :call SmartExport()<cr>
 nmap <silent> <leader>ey :call PropertyYank()<cr>
 
-
-runtime! coc_maps.vim
