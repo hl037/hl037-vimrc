@@ -174,4 +174,5 @@ hi cursorline cterm=None ctermbg=darkblue ctermfg=white
 hi Pmenu ctermbg=017 ctermfg=grey
 hi PmenuSel ctermbg=021 ctermfg=252
 
+hi LspInlayHint cterm=none ctermfg=236 guifg=#3d3d3d
 

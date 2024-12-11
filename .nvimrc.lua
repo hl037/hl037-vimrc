@@ -1,4 +1,3 @@
-
 -- Set up nvim-cmp.
 local cmp = require'cmp'
 cmp.types = require'cmp.types'
@@ -7,7 +6,7 @@ cmp.setup({
   snippet = {
     -- REQUIRED - you must specify a snippet engine
     expand = function(args)
-      vim.fn["UltiSnps#Anon"](args.body) 
+      vim.fn["UltiSnps#Anon"](args.body)
       -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
       -- require('snippy').expand_snippet(args.body) -- For `snippy` users.
       -- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
@@ -136,6 +135,37 @@ require "lsp_signature".setup{
   },
 }
 
+-- Vue
+local mason_registry = require('mason-registry')
+local vue_language_server_path = mason_registry.get_package('vue-language-server'):get_install_path() .. '/node_modules/@vue/language-server'
+
+require('lspconfig').ts_ls.setup {
+    -- Initial options for the TypeScript language server
+    init_options = {
+        plugins = {
+            {
+                -- Name of the TypeScript plugin for Vue
+                name = '@vue/typescript-plugin',
+
+                -- Location of the Vue language server module (path defined in step 1)
+                location = vue_language_server_path,
+
+                -- Specify the languages the plugin applies to (in this case, Vue files)
+                languages = { 'vue' },
+            },
+        },
+    },
+
+    -- Specify the file types that will trigger the TypeScript language server
+    filetypes = {
+        'typescript',          -- TypeScript files (.ts)
+        'javascript',          -- JavaScript files (.js)
+        'javascriptreact',     -- React files with JavaScript (.jsx)
+        'typescriptreact',     -- React files with TypeScript (.tsx)
+        'vue'                  -- Vue.js single-file components (.vue)
+    },
+}
+
 -- Telescope
 -- 
 local telescope, builtin = require('telescope'), require('telescope.builtin')
@@ -154,4 +184,8 @@ function FuzzyFindFiles()
     search = '',
   })
 end
+
+-- Enable inlay hints (display parmas)
+
+vim.lsp.inlay_hint.enable(true, { 0 })
 

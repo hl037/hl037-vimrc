@@ -274,8 +274,8 @@ nmap <leader><leader>: <leader>ffb
 nmap <leader>! <cmd>Telescope lsp_dynamic_workspace_symbols<cr>
 nmap <leader><leader>! <cmd>Telescope lsp_document_symbols<cr>
 
-nmap <leader>gg <cmd>Telescope lsp_definitions<cr>
-nmap <leader><leader>g <cmd>Telescope lsp_definitions<cr>
+nmap <leader>gg <Plug>KangarooPush<cmd>Telescope lsp_definitions<cr>
+nmap <leader><leader>g <Plug>KangarooPush<cmd>Telescope lsp_definitions<cr>
 nmap <leader>gr <cmd>Telescope lsp_references<cr>
 nmap <leader>gi <cmd>Telescope lsp_incoming_calls<cr>
 nmap <leader>go <cmd>Telescope lsp_outgoing_calls<cr>
@@ -674,7 +674,7 @@ function! <SID>SynGroup()
   echo map(synstack(line('.'), col('.')), 'synIDattr(v:val, "name")')
 endfunc
 
-autocmd BufEnter * silent! lcd %:p:h
+" autocmd BufEnter * silent! lcd %:p:h
 
 let s:ntfind_lock = 0
 
@@ -709,6 +709,8 @@ res = subprocess.run(["kdialog", "--getcolor" ], capture_output=True).stdout.dec
 insert(res)
 EOF
 endfunction
+
+imap <M-c> <space><c-c>:GetColor<cr>Els
 
 
 command! -nargs=+ Shlex call <SID>Shlex(<q-args>)
