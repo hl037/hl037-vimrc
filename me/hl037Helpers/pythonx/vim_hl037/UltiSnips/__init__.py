@@ -1,3 +1,6 @@
+import os
+import datetime as dt
+
 class Nil:
 	pass
 
@@ -16,4 +19,10 @@ def recompute(*plc):
       return res
     return wrapper
   return decorator
+
+def me():
+  return os.environ.get('ME', 'hl037')
+
+def simple_date():
+  return dt.datetime.now().strftime('%Y-%m-%d')
 
