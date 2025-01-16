@@ -109,7 +109,7 @@ require'mason'.setup{
 }
 
 require'mason-lspconfig'.setup{
-    ensure_installed = { "lua_ls", "rust_analyzer", "clangd", "volar", "ruff", "jedi_language_server"},
+    ensure_installed = { "lua_ls", "rust_analyzer", "clangd", "volar", "ruff", "pyright", "gopls"},
     automatic_installation = true,
 }
 

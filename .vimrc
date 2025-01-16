@@ -91,8 +91,8 @@ Plug 'dylon/vim-antlr'
 "Plug 'davidhalter/jedi-vim', {'for':'python'}
 "Plug 'hl037/vim-visualHtml', {'merged': 0
 """""""""""""""""""""""""""""""""""""
-"Plug 'SirVer/ultisnips'
-Plug '~/projects/sources/ultisnips'
+Plug 'SirVer/ultisnips'
+"Plug '~/projects/sources/ultisnips'
 "Plug '~/projects/sources/ultisnps-remote_debug'
 
    """""""""""""""""""""""""""""""""""""
@@ -128,6 +128,7 @@ endif
 Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim', { 'branch': '0.1.x' }
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
+Plug 'airblade/vim-rooter'
 
 
 Plug 'iloginow/vim-stylus'
@@ -193,6 +194,9 @@ endif
 set maxmempattern=100000
 setglobal nomodeline
 
+" vim-rooter
+
+let g:rooter_patterns = ['.git', 'pyproject.tom', 'setup.py', 'labs_build.py', 'package.json']
 
 " Indent line
 
