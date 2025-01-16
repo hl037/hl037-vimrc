@@ -772,11 +772,26 @@ function SwCase_SNAKE(type)
   call switchcase#switchcase(a:type, 'SNAKE')
 endfunction
 
+function SwCase_dash(type)
+  call switchcase#switchcase(a:type, 'dash')
+endfunction
+
+function SwCase_Dash(type)
+  call switchcase#switchcase(a:type, 'Dash')
+endfunction
+
+function SwCase_DASH(type)
+  call switchcase#switchcase(a:type, 'DASH')
+endfunction
+
 map <leader>cc <Cmd>set opfunc=SwCase_camel<CR>g@
 map <leader>cC <Cmd>set opfunc=SwCase_Camel<CR>g@
 map <leader>c_ <Cmd>set opfunc=SwCase_snake<CR>g@
 map <leader>cs <Cmd>set opfunc=SwCase_Snake<CR>g@
 map <leader>cS <Cmd>set opfunc=SwCase_SNAKE<CR>g@
+map <leader>c- <Cmd>set opfunc=SwCase_dash<CR>g@
+map <leader>cd <Cmd>set opfunc=SwCase_Dash<CR>g@
+map <leader>cD <Cmd>set opfunc=SwCase_DASH<CR>g@
 
 
 """""""""""""""

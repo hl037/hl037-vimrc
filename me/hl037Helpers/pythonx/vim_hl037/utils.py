@@ -1,7 +1,12 @@
 import io
 import re
 
-import vim
+try :
+  import vim
+except ModuleNotFoundError :
+  if __name__ != '__main__' :
+    raise
+  
 
 def getMark(buf, mark):
   (l, c) = buf.mark(mark)
@@ -46,6 +51,28 @@ KIND_UPPER = 3
 
 class CaseTranslator(object):
   @staticmethod
+  def dash_case(words: list[tuple[str, int]]):
+    return '-'.join( w.lower() for w, k in words )
+  
+  dash = dash_case
+  
+  @staticmethod
+  def Dash_Case(words: list[tuple[str, int]]):
+    return '-'.join(
+      w.capitalize() if k != KIND_UPPER else w.upper()
+      for w, k in words
+    )
+  
+  Dash = Dash_Case
+  
+  @staticmethod
+  def DASH_CASE(words: list[tuple[str, int]]):
+    return '-'.join( w.upper() for w, k in words )
+  
+  DASH = DASH_CASE
+  
+  
+  @staticmethod
   def snake_case(words: list[tuple[str, int]]):
     return '_'.join( w.lower() for w, k in words )
   
@@ -65,6 +92,7 @@ class CaseTranslator(object):
     return '_'.join( w.upper() for w, k in words )
   
   SNAKE = SNAKE_CASE
+  
   
   @staticmethod
   def CamelCase(words: list[tuple[str, int]]):
@@ -104,8 +132,8 @@ class CaseTranslatorTokenizer(object):
   lower_cases = [ w.lower() for w in upper_cases ]
   upper_case_reg = re.compile('|'.join(upper_cases + [r'[1-9]+']))
   lower_case_reg = re.compile('|'.join(lower_cases + [r'[1-9]+']))
-  keep_reg = re.compile(r'(__+|[^A-Za-z_1-9])+')
-  general_sep_reg = re.compile(r'_|(?=[A-Z])')
+  keep_reg = re.compile(r'(--+|__+|[^A-Za-z_1-9-])+')
+  general_sep_reg = re.compile(r'-|_|(?=[A-Z])')
 
   def __init__(self, s:str):
     self.s = s

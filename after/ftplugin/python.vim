@@ -1,4 +1,4 @@
-if get(g:, 'config_flavor', 'default') == "socotec"
+if get(g:, 'config_flavor', 'default') == "bnpp"
   set shiftwidth=4
   set tabstop=4
 else

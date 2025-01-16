@@ -1,63 +1,6 @@
 global !p
-T = snip.store.tmp
-B = snip.store.buffer
-F = snip.store.file
-S = snip.store.session
-C = snip.store.common
-I = snip.store.snippet
+from vim_hl037.UltiSnips import *
 
-_once = None
-
-def once():
-	global _once
-	if _once is None:
-		_once = T['once', True]
-		T.once = False
-	return _once
-
-class StoreProxy(object):
-	def __init__(self, tab, store, key=None):
-		self.store = store
-		self.tab = tab
-		self.key = None
-		if key is not None:
-			self.__getitem__(key)
-	
-	def __getitem__(self, key):
-		if self.key is not None:
-			raise RuntimeError("Key already assigned")
-		if not isinstance(key, tuple):
-			key = key, ''
-		snip.rv = self.store[key]
-		self.key = key[0]
-	
-	def __getattr__(self, key):
-		return self.__getitem__(key)
-
-class DummyProxy(object):
-	def __getitem__(self, key):
-		return None
-	def __getattr__(self, key):
-		return self.__getitem__(key)
-	
-
-class TabMem(object):
-	def __call__(self, tab, store, key=None):
-		if once():
-			r = StoreProxy(tab, store, key)
-			I['_TabMemProxies', []].append(r)
-			return r
-		else :
-			return DummyProxy()
-	
-	def do(self):
-		for p in I['_TabMemProxies', []]:
-			if p.key is None:
-				raise RuntimeError('A tab_mem has no key')
-			p.store[p.key] = t[p.tab]
-
-mem_tab = TabMem()
-	
 endglobal
 
 snippet VuexStore "VuexStore" 
@@ -265,19 +208,19 @@ endsnippet
 
 snippet Dvar "console.log({})" b
 console.log({
-	'$1' : $1,$2
+	'`!p snip.rv=t[1]`' : $1,$2
 });
 endsnippet
 
 snippet DDvar "console.log({})" b
 console.log('$1', {
-	'$2' : $2,$3
+	'`!p snip.rv=t[2]`' : $2,$3
 });
 endsnippet
 
 snippet TDvar "console.log({})" b
 console.log('TTT $1', {
-	'$2' : $2,$3
+	'`!p snip.rv=t[2]`' : $2,$3
 });
 endsnippet
 
@@ -290,7 +233,7 @@ console.log('TTT $1');
 endsnippet
 
 snippet dvar "line of Dvar" b
-'$1' : $1,
+'`!p snip.rv=t[1]`' : $1,
 endsnippet
 
 snippet : "'' : ..." b
