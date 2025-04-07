@@ -109,7 +109,7 @@ require'mason'.setup{
 }
 
 require'mason-lspconfig'.setup{
-    ensure_installed = { "lua_ls", "rust_analyzer", "volar", "ruff", "pyright", "gopls"},
+    ensure_installed = { "lua_ls", "rust_analyzer", "volar", "pyright", "gopls"},
     automatic_installation = true,
 }
 
@@ -189,3 +189,6 @@ end
 
 vim.lsp.inlay_hint.enable(true, { 0 })
 
+
+-- map display diagnosis
+vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = "Show diagnosis in float" })

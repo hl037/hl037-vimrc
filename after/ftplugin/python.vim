@@ -1,4 +1,4 @@
-if get(g:, 'config_flavor', 'default') == "bnpp"
+if index(get(g:, 'config_flavor', []), "py4") >= 0
   set shiftwidth=4
   set tabstop=4
 else

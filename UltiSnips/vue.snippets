@@ -45,8 +45,6 @@ snippet vuejs ""
 <script setup>
 /* global defineProps, defineEmits, defineExpose */
 
-import { ref, onMounted, watch, toRefs, computed } from 'vue'
-
 $0
 
 </script>
@@ -66,8 +64,6 @@ snippet vue ""
 <script setup lang="ts">
 /* global defineProps, defineEmits, defineExpose */
 
-import { ref, onMounted, watch, toRefs, computed } from 'vue'
-
 $0
 
 </script>
@@ -83,15 +79,17 @@ endsnippet
 
 snippet emit "Emit" b
 const emit = defineEmits<{
-	(e: '$1', $2): void,$0
+	$1: [$2],$0
 }>()
-endsnippet
-snippet em "Emit, continued" b 
-(e: '$1', $2): void,$0
 endsnippet
 
 snippet props "Props" b
 const props = defineProps<{
 	$0
 }>()
+endsnippet
+
+snippet i18n "i18n stuffs" b
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 endsnippet

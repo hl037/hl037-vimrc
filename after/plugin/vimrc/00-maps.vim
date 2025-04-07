@@ -382,7 +382,6 @@ map +    <Plug>VimspectorDownFrame
 
 
 map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
-map <silent> <leader>ee :bufdo e!<cr>
 
 map <leader>a :VisMath()<Left>
 
