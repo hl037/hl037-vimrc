@@ -130,6 +130,8 @@ Plug 'nvim-telescope/telescope.nvim', { 'branch': '0.1.x' }
 Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
 Plug 'airblade/vim-rooter'
 
+Plug 'folke/trouble.nvim'
+
 
 Plug 'iloginow/vim-stylus'
 Plug 'kmonad/kmonad-vim'
@@ -205,6 +207,10 @@ let g:indentLine_color_term=233
 let g:indentLine_color_gui='#343434' 
 
 let g:vim_json_conceal = 0
+
+" Trouble
+
+nmap <leader>xx <cmd>Trouble diagnostics toggle<cr>
 
 " Sideways
 nnoremap <M-h> :SidewaysLeft<cr>
