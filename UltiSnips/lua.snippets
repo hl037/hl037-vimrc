@@ -1,0 +1,328 @@
+priority 0
+
+global !p
+from vim_hl037.UltiSnips import *
+from vim_hl037.UltiSnips.lua import *
+endglobal
+
+context "eol(snip) and get_class_name(snip)"
+snippet m "method" b
+function `!p snip.rv=snip.context`:$1($2)
+	$3
+end
+endsnippet
+
+context "eol(snip) and get_class_name(snip)"
+snippet mm "metatable method" b
+function `!p snip.rv=snip.context`:__$2($3)
+	$4
+end
+endsnippet
+
+context "eol(snip)"
+snippet f "function" b
+function $1($2)
+	$3
+end
+endsnippet
+
+context "eol(snip)"
+snippet ff "module function" b
+function M.$1($2)
+	$3
+end
+endsnippet
+
+context "eol(snip)"
+snippet lf "local function" b
+local function $1($2)
+	$3
+end
+endsnippet
+
+snippet s. "self." 
+self.
+endsnippet
+
+context "eol(snip)"
+snippet si "self initialization" b
+self.`!p snip.rv=t[1]` = $1
+endsnippet
+
+snippet "\.\=" "variable initialisation" r
+.$2 = $2
+endsnippet
+
+snippet "\['\=" "table initialization" r
+['$1'] = $1
+endsnippet
+
+snippet '\["\=' "table initialization 2" r 
+["$1"] = $1
+endsnippet
+
+snippet s "self"
+self
+endsnippet
+
+priority 0
+
+snippet s= "self initialization dif" b
+self.$1 = $2
+endsnippet
+
+context "eol(snip)"
+snippet req "import (require)" b
+require('$1')
+endsnippet
+
+context "eol(snip)"
+snippet i "local import (require)" b
+local ${2:`!p snip.rv=sanitize_name(t[1])`} = require('$1')
+endsnippet
+
+context "eol(snip)"
+snippet cl "class/module pattern" b
+
+---@class $1
+local $1 = {}
+$1.__index = $1
+
+function $1:new($2)
+	local instance = setmetatable({}, self)
+	$3
+	return instance
+end
+
+$0
+endsnippet
+
+context "eol(snip) and sol_or_annotation(snip, match)"
+snippet "@c " "class annotation" rA
+`!p add_annotation(snip)`@class 
+endsnippet
+
+context "eol(snip) and sol_or_annotation(snip, match)"
+snippet "\@f " "field annotation" rA
+`!p add_annotation(snip)`@field 
+endsnippet
+
+context "eol(snip) and sol_or_annotation(snip, match)"
+snippet "@p " "param annotation" rA
+`!p add_annotation(snip)`@param $1 ${2:any} $0
+endsnippet
+
+context "eol(snip) and sol_or_annotation(snip, match)"
+snippet "@r " "return annotation" rA
+`!p add_annotation(snip)`@return 
+endsnippet
+
+context "eol(snip) and sol_or_annotation(snip, match)"
+snippet "@a " "async annotation" rA
+`!p add_annotation(snip)`@async 
+endsnippet
+
+context "eol(snip) and sol_or_annotation(snip, match)"
+snippet "@t " "type annotation" rA
+`!p add_annotation(snip)`@type 
+endsnippet
+
+
+
+context "eol(snip)"
+snippet mt "metatable setup" b
+local $1 = {}
+$1.__index = $1
+setmetatable($1, $1)
+$0
+endsnippet
+
+snippet p "print" b
+print('$1')$3
+endsnippet
+
+snippet Tp "debug print" b
+print('TTT $1')
+endsnippet
+
+snippet pf "print formatted" b
+print(string.format('$1', $2))$3
+endsnippet
+
+# !!! NOT SURE - Lua doesn't have built-in pprint, might need external library
+snippet pp "pretty print" b
+print(inspect($1))$3  
+endsnippet
+
+context "eol(snip)"
+snippet "r" "return" b
+return $1
+endsnippet
+
+context "eol(snip)"
+snippet y "coroutine yield" b 
+coroutine.yield($1)
+endsnippet
+
+priority 10
+
+context "eol(snip)"
+snippet "\bfor " "for numeric" brA
+for $1 = $2, $3 do
+	$4
+end
+endsnippet
+
+context "eol(snip)"
+snippet "\bforp " "for pairs" brA
+for $1, $2 in pairs($3) do
+	$4
+end
+endsnippet
+
+context "eol(snip)"
+snippet "\bfori " "for ipairs" brA
+for $1, $2 in ipairs($3) do
+	$4
+end
+endsnippet
+
+context "eol(snip)"
+snippet "if " "if" brA
+if $1 then
+	$2
+end
+endsnippet
+
+context "eol(snip)"
+snippet "elif " "elseif" brA
+elseif $1 then
+	$2
+endsnippet
+
+context "eol(snip)"
+snippet "else " "else" brA
+else
+	$2
+endsnippet
+
+context "eol(snip)"
+snippet "while " "while" brA
+while $1 do
+	$2
+end
+endsnippet
+
+context "eol(snip)"
+snippet "repeat " "repeat until" brA
+repeat
+	$2
+until $1
+endsnippet
+
+snippet 'l:' "anonymous function" r
+function($1) return $2 end
+endsnippet
+
+priority 0
+context "not_comment(snip)"
+snippet "\bfor:" "for in comprehension style" r
+for $1 in $2
+endsnippet
+
+snippet a "assert" b
+assert($1, '$2')$0
+endsnippet
+
+snippet #i "Info comment" bA
+-- INFO - `!p snip.rv=simple_date()` -- `!p snip.rv=me()` : 
+endsnippet
+
+snippet #t "TODO comment" bA
+-- TODO - `!p snip.rv=simple_date()` -- `!p snip.rv=me()` : 
+endsnippet
+
+snippet #b "BUG comment" bA
+-- BUG - `!p snip.rv=simple_date()` -- `!p snip.rv=me()` : 
+endsnippet
+
+priority 0
+
+## !!! NOT SURE - Lua debugging depends on debugger used
+snippet b "debug breakpoint" b
+debug.debug()
+endsnippet
+
+snippet * "varargs" i
+...
+endsnippet
+
+snippet NI "not implemented error" b
+error("Not implemented: $1")$0
+endsnippet
+
+snippet typ "type check" i
+type($1) == '$2'$0
+endsnippet
+
+snippet getmt "getmetatable" i
+getmetatable($1)$0
+endsnippet
+
+snippet setmt "setmetatable" i
+setmetatable($1, $2)$0
+endsnippet
+
+context "eol(snip)"
+snippet "pc " "protected call" brA
+local ok, res = pcall($1)
+endsnippet
+
+context "eol(snip)"
+snippet "try " "try/catch" brA
+local ok, res = pcall($1)
+if not ok then
+	$2
+end
+$0
+endsnippet
+
+snippet xpcall "extended protected call" b
+local ok, result = xpcall($1, debug.traceback)
+if not ok then
+	$2
+end
+$0
+endsnippet
+
+snippet co "coroutine" b
+local co = coroutine.create(function($1)
+	$2
+end)
+$0
+endsnippet
+
+snippet mod "module pattern" b
+local M = {}
+
+$0
+
+return M
+endsnippet
+
+context "eol(snip)"
+snippet l "local variable" b
+local $1 = $2
+endsnippet
+
+# snippet next "next iterator" b
+# for k, v in next, $1 do
+# 	$2
+# end
+# endsnippet
+# 
+# snippet gmatch "string gmatch" b
+# for $1 in string.gmatch($2, '$3') do
+# 	$4
+# end
+# endsnippet

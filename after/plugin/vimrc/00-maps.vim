@@ -210,13 +210,6 @@ map <leader>we :tabedit <c-r>=expand("%:p:h")<cr>/
 " Switch CWD to the directory of the open buffer
 map <leader>cd :cd %:p:h<cr>:pwd<cr>
 
-" Specify the behavior when switching between buffers 
-try
-  set switchbuf=useopen,usetab,newtab
-  set stal=2
-catch
-endtry
-
 " Return to last edit position when opening files (You want this!)
 autocmd BufReadPost *
      \ if line("'\"") > 0 && line("'\"") <= line("$") |
@@ -361,27 +354,44 @@ nmap <leader><leader>m<space> :call TTTKonsoleMake()<cr>
 "nmap <leader><leader>m<cr> :!make<cr>
 nmap <leader><leader>mr :!konsole -e bash -c "make; read"<cr>
 
-nmap <Leader><Leader>e <Plug>VimspectorBalloonEval
-xmap <Leader><Leader>e <Plug>VimspectorBalloonEval
+"nmap <Leader><Leader>e <Plug>VimspectorBalloonEval
+"xmap <Leader><Leader>e <Plug>VimspectorBalloonEval
+"
+"map <F4>         <Plug>VimspectorStop
+"map <leader><F4> :VimspectorReset<cr>
+"map <F5>         <Plug>VimspectorRestart
+"map <silent> <leader><F5>         :call vimspector#Launch()<cr>
+"map <F6>         <Plug>VimspectorPause
+"map <F7>         <Plug>VimspectorAddFunctionBreakpoint
+"map <F8>         <Plug>VimspectorToggleBreakpoint
+"map <leader><F8> <Plug>VimspectorToggleConditionalBreakpoint
+"map <F9>         <Plug>VimspectorContinue
+"map <leader><F9> <Plug>VimspectorRunToCursor
+"map <F10>        <Plug>VimspectorStepOver
+"map <F11>        <Plug>VimspectorStepInto
+"map <F12>        <Plug>VimspectorStepOut
+"map -    <Plug>VimspectorUpFrame
+"map +    <Plug>VimspectorDownFrame
 
-map <F4>         <Plug>VimspectorStop
-map <leader><F4> :VimspectorReset<cr>
-map <F5>         <Plug>VimspectorRestart
-map <silent> <leader><F5>         :call vimspector#Launch()<cr>
-map <F6>         <Plug>VimspectorPause
-map <F7>         <Plug>VimspectorAddFunctionBreakpoint
-map <F8>         <Plug>VimspectorToggleBreakpoint
-map <leader><F8> <Plug>VimspectorToggleConditionalBreakpoint
-map <F9>         <Plug>VimspectorContinue
-map <leader><F9> <Plug>VimspectorRunToCursor
-map <F10>        <Plug>VimspectorStepOver
-map <F11>        <Plug>VimspectorStepInto
-map <F12>        <Plug>VimspectorStepOut
-map -    <Plug>VimspectorUpFrame
-map +    <Plug>VimspectorDownFrame
+map <leader><leader>b         <cmd>DapToggleBreakpoint<CR>
+map <F8>         <cmd>DapPause<CR>
+map <leader><F8> <cmd>DapDisconnect<CR>
+map <F9>         <cmd>DapContinue<CR>
+map <F10>        <cmd>DapStepOver<CR>
+map <F11>        <cmd>DapStepInto<CR>
+map <F12>        <cmd>DapStepOut<CR>
+map -    <cmd>lua require'dap'.up()<CR>
+map +    <cmd>lua require'dap'.down()<CR>
+
+
+map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
+map <silent> <leader>ee :bufdo e!<cr>
+
+map <leader>a :VisMath()<Left>
 
 
 map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
 
 map <leader>a :VisMath()<Left>
 
+map <leader><leader><leader>ps :ProjectSwitch<cr>

@@ -368,24 +368,15 @@ nmap <leader><leader>m<space> :call TTTKonsoleMake()<cr>
 "nmap <leader><leader>m<cr> :!make<cr>
 nmap <leader><leader>mr :!konsole -e bash -c "make; read"<cr>
 
-nmap <Leader><Leader>e <Plug>VimspectorBalloonEval
-xmap <Leader><Leader>e <Plug>VimspectorBalloonEval
-
-map <F4>         <Plug>VimspectorStop
-map <leader><F4> :VimspectorReset<cr>
-map <F5>         <Plug>VimspectorRestart
-map <silent> <leader><F5>         :call vimspector#Launch()<cr>
-map <F6>         <Plug>VimspectorPause
-map <F7>         <Plug>VimspectorAddFunctionBreakpoint
-map <F8>         <Plug>VimspectorToggleBreakpoint
-map <leader><F8> <Plug>VimspectorToggleConditionalBreakpoint
-map <F9>         <Plug>VimspectorContinue
-map <leader><F9> <Plug>VimspectorRunToCursor
-map <F10>        <Plug>VimspectorStepOver
-map <F11>        <Plug>VimspectorStepInto
-map <F12>        <Plug>VimspectorStepOut
-map -    <Plug>VimspectorUpFrame
-map +    <Plug>VimspectorDownFrame
+map <leader><leader>b         <Plug>DapToggleBreakpoint
+map <F8>         <Plug>DapPause
+map <leader><F8> <Plug>DapDisconnect
+map <F9>         <Plug>DapContinue
+map <F10>        <Plug>DapStepOver
+map <F11>        <Plug>DapStepInto
+map <F12>        <Plug>DapStepOut
+map -    <cmd>lua require'dap'.up()
+map +    <cmd>lua require'dap'.down()
 
 
 map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>

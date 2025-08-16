@@ -1,0 +1,314 @@
+*pr0ject.nvim.txt*    Minimalist project management for Neovim         *pr0ject*
+
+Author: Your Name
+License: MIT
+Version: 1.0.0
+
+==============================================================================
+CONTENTS                                                    *pr0ject-contents*
+
+    1. Introduction ......................... |pr0ject-introduction|
+    2. Requirements ......................... |pr0ject-requirements|
+    3. Installation ......................... |pr0ject-installation|
+    4. Configuration ........................ |pr0ject-configuration|
+    5. Commands ............................. |pr0ject-commands|
+    6. Functions ............................ |pr0ject-functions|
+    7. Keymaps .............................. |pr0ject-keymaps|
+    8. Hooks and Events ..................... |pr0ject-hooks|
+    9. FAQ .................................. |pr0ject-faq|
+    10. Changelog ........................... |pr0ject-changelog|
+
+==============================================================================
+1. INTRODUCTION                                         *pr0ject-introduction*
+
+pr0ject.nvim is a minimalist project management plugin for Neovim that allows
+you to:
+
+• Register directories as named projects
+• Quickly switch between projects via Telescope
+• Execute custom commands when switching projects
+• Maintain a clean project registry without cluttering your project folders
+
+Key features:
+• Zero dependencies (except optional Telescope integration)
+• No files created in project directories
+• Simple JSON storage in Neovim's data directory
+• Customizable hooks for project-specific actions
+• Smart project removal with conflict resolution
+
+==============================================================================
+2. REQUIREMENTS                                         *pr0ject-requirements*
+
+• Neovim >= 0.8.0
+• telescope.nvim (optional, for project picker)
+
+==============================================================================
+3. INSTALLATION                                         *pr0ject-installation*
+
+Using lazy.nvim: >
+    {
+      "your-username/pr0ject.nvim",
+      config = function()
+        require('pr0ject').setup()
+      end,
+      -- Optional: only load when needed
+      cmd = { 'ProjectAdd', 'ProjectSwitch', 'ProjectRemove', 'ProjectList' },
+      keys = {
+        { '<leader>pa', desc = 'Add project' },
+        { '<leader>ps', desc = 'Switch project' },
+      },
+    }
+<
+
+Using packer.nvim: >
+    use {
+      'your-username/pr0ject.nvim',
+      config = function()
+        require('pr0ject').setup()
+      end
+    }
+<
+
+Using vim-plug: >
+    Plug 'your-username/pr0ject.nvim'
+<
+Then in your init.lua: >
+    require('pr0ject').setup()
+<
+
+==============================================================================
+4. CONFIGURATION                                       *pr0ject-configuration*
+
+pr0ject.nvim can be configured by passing a table to the setup function.
+
+Default configuration: >
+    require('pr0ject').setup({
+      -- Path to projects storage file
+      projects_file = vim.fn.stdpath('data') .. '/pr0jects.json',
+      
+      -- Hook called when switching projects
+      on_project_change = nil,
+      
+      -- Enable default keymaps
+      keymaps = true,
+    })
+<
+
+Configuration options:                              *pr0ject-config-options*
+
+projects_file                                      *pr0ject-config-projects_file*
+    Type: string
+    Default: `vim.fn.stdpath('data') .. '/pr0jects.json'`
+    
+    Path to the JSON file where project data is stored.
+
+on_project_change                              *pr0ject-config-on_project_change*
+    Type: function or nil
+    Default: nil
+    
+    Function called whenever switching to a project. Receives the project path
+    as argument.
+    
+    Example: >
+        on_project_change = function(project_path)
+          print('Switched to: ' .. project_path)
+          -- Custom actions here
+        end
+<
+
+keymaps                                              *pr0ject-config-keymaps*
+    Type: boolean
+    Default: true
+    
+    Whether to create default keymaps. Set to false to define your own.
+
+==============================================================================
+5. COMMANDS                                                 *pr0ject-commands*
+
+:Pr0jectAdd [name]                                              *:Pr0jectAdd*
+    Add the current directory as a project. If [name] is not provided, uses
+    the directory name. If [name] is empty, prompts for input.
+    
+    Examples: >
+        :Pr0jectAdd                    " Uses directory name
+        :Pr0jectAdd my-awesome-project " Uses custom name
+<
+
+:Pr0jectRemove [identifier]                                   *:Pr0jectRemove*
+    Remove a project. [identifier] can be:
+    • Empty: removes project for current directory
+    • A path: removes project with exact path match
+    • A name: removes project(s) with matching name
+    
+    If multiple projects share the same name, displays an interactive menu.
+    
+    Examples: >
+        :Pr0jectRemove                      " Remove current directory
+        :Pr0jectRemove /path/to/project     " Remove by path
+        :Pr0jectRemove my-project           " Remove by name
+<
+
+:Pr0jectList                                                    *:Pr0jectList*
+    Display all registered projects in the command area.
+
+:Pr0jectSwitch                                                *:Pr0jectSwitch*
+    Open Telescope picker to select and switch to a project. Requires
+    telescope.nvim.
+
+==============================================================================
+6. FUNCTIONS                                               *pr0ject-functions*
+
+The following functions are available in the Lua API:
+
+require('pr0ject').add_project({name}, {path})           *pr0ject.add_project()*
+    Add a project programmatically.
+    
+    Parameters:
+    • name (string, optional): Project name. Defaults to directory name.
+    • path (string, optional): Project path. Defaults to current directory.
+
+require('pr0ject').remove_project({identifier})       *pr0ject.remove_project()*
+    Remove a project by name or path. Handles conflicts with interactive menu.
+    
+    Parameters:
+    • identifier (string, optional): Project name, path, or empty for current.
+
+require('pr0ject').remove_project_by_path({path}) *pr0ject.remove_project_by_path()*
+    Remove a project by exact path match.
+    
+    Parameters:
+    • path (string): Exact project path to remove.
+
+require('pr0ject').switch_to_project({path})         *pr0ject.switch_to_project()*
+    Switch to a project by path. Changes working directory and triggers hooks.
+    
+    Parameters:
+    • path (string): Project path to switch to.
+
+require('pr0ject').get_projects_list()                *pr0ject.get_projects_list()*
+    Get a structured list of all projects.
+    
+    Returns:
+    • table: Array of project objects with name, path, created, display fields.
+
+require('pr0ject').telescope_projects()                *pr0ject.telescope_projects()*
+    Open Telescope picker for project selection.
+
+require('pr0ject').list_projects()                        *pr0ject.list_projects()*
+    Print all projects to the command area.
+
+==============================================================================
+7. KEYMAPS                                                   *pr0ject-keymaps*
+
+Default keymaps (when `keymaps = true`):
+
+<leader>pa                                                        *<leader>pa*
+    Add current directory as project
+
+<leader>pr                                                        *<leader>pr*
+    Remove project (current directory)
+
+<leader>ps                                                        *<leader>ps*
+    Switch project (Telescope picker)
+
+<leader>pl                                                        *<leader>pl*
+    List all projects
+
+To disable default keymaps and define your own: >
+    require('pr0ject').setup({ keymaps = false })
+    
+    -- Your custom keymaps
+    vim.keymap.set('n', '<leader>pp', require('pr0ject').add_project)
+    vim.keymap.set('n', '<leader>po', require('pr0ject').telescope_projects)
+<
+
+==============================================================================
+8. HOOKS AND EVENTS                                             *pr0ject-hooks*
+
+pr0ject.nvim provides several ways to execute code when switching projects:
+
+Configuration Hook                                  *pr0ject-config-hook*
+    Use the `on_project_change` option in setup: >
+        require('pr0ject').setup({
+          on_project_change = function(project_path)
+            -- Your code here
+          end,
+        })
+<
+
+User Autocmd Event                                  *pr0ject-user-event*
+    pr0ject triggers a `User ProjectChanged` event: >
+        vim.api.nvim_create_autocmd('User', {
+          pattern = 'ProjectChanged',
+          callback = function()
+            local cwd = vim.fn.getcwd()
+            print('Project changed to: ' .. cwd)
+          end,
+        })
+<
+
+DirChanged Autocmd                                  *pr0ject-dirchanged*
+    Use Neovim's built-in DirChanged event: >
+        vim.api.nvim_create_autocmd('DirChanged', {
+          pattern = '*',
+          callback = function()
+            -- Triggered on any directory change
+          end,
+        })
+<
+
+Example: Project-specific configurations >
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'ProjectChanged',
+      callback = function()
+        local cwd = vim.fn.getcwd()
+        
+        -- Web project setup
+        if string.match(cwd, '/web%-projects/') then
+          vim.cmd('TSEnable highlight')
+          print('Web project detected')
+        
+        -- Lua project setup  
+        elseif string.match(cwd, '%.lua$') then
+          vim.opt_local.tabstop = 2
+          print('Lua project detected')
+        end
+      end,
+    })
+<
+
+==============================================================================
+9. FAQ                                                           *pr0ject-faq*
+
+Q: Where are projects stored?
+A: In a JSON file at `~/.local/share/nvim/pr0jects.json` by default. No files
+   are created in your project directories.
+
+Q: Can I use this without Telescope?
+A: Yes! All core functions work without Telescope. You'll lose the picker UI
+   but can still use commands and the Lua API.
+
+Q: How do I backup my projects?
+A: Simply backup the `pr0jects.json` file from your Neovim data directory.
+   You can also sync it across machines.
+
+Q: Can I have multiple projects with the same name?
+A: Yes. When removing by name, you'll get an interactive menu to choose which
+   one to remove.
+
+Q: Does this interfere with other project plugins?
+A: No. pr0ject.nvim is designed to be minimal and non-intrusive. It doesn't
+   auto-detect projects or create files in your directories.
+
+==============================================================================
+10. CHANGELOG                                               *pr0ject-changelog*
+
+1.0.0
+    • Initial release
+    • Basic project management functionality
+    • Telescope integration
+    • Configurable hooks
+    • Smart project removal
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
