@@ -93,11 +93,16 @@ end
 -- Project auto commands
 ----------------------------
 
+local dap_orig_config = nil
+
 vim.api.nvim_create_autocmd("User", {
- pattern = "BeforeProjectChanged",
- callback = function()
-   vim.cmd("NERDTreeClose")
- end,
+  pattern = "BeforeProjectChanged",
+  callback = function()
+    vim.cmd("NERDTreeClose")
+    if dap_orig_config ~= nil then
+      require'dap'.configurations  = dap_orig_config
+    end
+  end,
 })
 
 vim.api.nvim_create_autocmd("User", {
@@ -110,5 +115,7 @@ vim.api.nvim_create_autocmd("User", {
    if file_exists('./.nvim/rc.lua') then
      vim.cmd('luafile ./.nvim/rc.lua')
    end
+   dap_orig_config = vim.deepcopy(require'dap'.configurations)
+   require'dap.ext.vscode'.load_launchjs()
  end,
 })
