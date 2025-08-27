@@ -408,11 +408,11 @@ function M.list_projects()
 end
 
 function M.nvim_create_user_command(name, command, opts)
-  scope.nvim_create_user_command(name, command, opts or {})
+  scope:nvim_create_user_command(name, command, opts or {})
 end
   
 function M.set_keymap(mode, lhs, rhs, opts)
-  scope.set_keymap(mode, lhs, rhs, opts)
+  scope:set_keymap(mode, lhs, rhs, opts)
 end
 
 -- Setup and initialization
