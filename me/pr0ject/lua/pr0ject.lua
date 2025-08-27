@@ -60,6 +60,9 @@ local projects = {}
 ---@type Project[]
 local ordered_projects = {}
 
+-- cleanup function registered
+local cleanups = {}
+
 -- Utilities
 local function normalize_path(path)
   return vim.fn.resolve(vim.fn.fnamemodify(path, ':p:h'))
@@ -255,7 +258,11 @@ function M.switch_to_project(project_path)
   end
 
   save_projects()
-  
+
+  for _, f in ipairs(cleanups) do
+    f()
+  end
+
   if M.config.on_project_change then
     local allow_continue = M.config.on_before_project_change(project_path)
     if allow_continue == false then
@@ -432,6 +439,10 @@ end
 
 function M.inspect()
   return vim.inspect(projects) .. '\n' .. vim.inspect(ordered_projects)
+end
+
+function M.push_cleanup(func)
+  table.insert(cleanups, func)
 end
 
 return M
