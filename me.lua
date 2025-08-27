@@ -112,6 +112,9 @@ vim.api.nvim_create_autocmd("User", {
    if file_exists('./.nvim/rc') then
      vim.cmd('source ./.nvim/rc')
    end
+   if file_exists('./.nvim/rc.py') then
+     vim.cmd('pyfile ./.nvim/rc.py')
+   end
    if file_exists('./.nvim/rc.lua') then
      vim.cmd('luafile ./.nvim/rc.lua')
    end

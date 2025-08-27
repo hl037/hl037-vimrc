@@ -1,5 +1,6 @@
 -- Simple Project Manager for Neovim
 
+local Scope = require('pr0ject.Scope')
 local M = {}
 
 -- Configuration
@@ -62,6 +63,8 @@ local ordered_projects = {}
 
 -- cleanup function registered
 local cleanups = {}
+
+local scope = Scope:new()
 
 -- Utilities
 local function normalize_path(path)
@@ -263,6 +266,8 @@ function M.switch_to_project(project_path)
     f()
   end
 
+  scope:clean()
+
   if M.config.on_project_change then
     local allow_continue = M.config.on_before_project_change(project_path)
     if allow_continue == false then
@@ -400,6 +405,14 @@ function M.list_projects()
   for _, project in pairs(projects) do
     print('  ' .. project.name .. ' -> ' .. project.path)
   end
+end
+
+function M.nvim_create_user_command(name, command, opts)
+  scope.nvim_create_user_command(name, command, opts or {})
+end
+  
+function M.set_keymap(mode, lhs, rhs, opts)
+  scope.set_keymap(mode, lhs, rhs, opts)
 end
 
 -- Setup and initialization
