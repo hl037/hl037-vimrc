@@ -1,0 +1,197 @@
+*luaguard.txt*    Secure Lua file execution for Neovim            *luaguard*
+
+Author: [Your Name]
+Version: 1.0
+License: Same terms as Vim itself (see |license|)
+
+==============================================================================
+CONTENTS                                                  *luaguard-contents*
+
+1. Introduction                |luaguard-introduction|
+2. Installation               |luaguard-installation|
+3. Configuration              |luaguard-configuration|
+4. Usage                      |luaguard-usage|
+5. Commands                   |luaguard-commands|
+6. Functions                  |luaguard-functions|
+7. Examples                   |luaguard-examples|
+8. Troubleshooting           |luaguard-troubleshooting|
+9. Changelog                 |luaguard-changelog|
+
+==============================================================================
+1. INTRODUCTION                                       *luaguard-introduction*
+
+LuaGuard is a Neovim plugin that provides secure execution of Lua files by
+implementing a trust-based system. It prevents automatic execution of
+untrusted Lua files by requiring explicit user confirmation before sourcing
+files that have never been executed or have been modified since the last
+trusted execution.
+
+The plugin maintains a cache of file checksums to track which files have been
+previously approved for execution, ensuring that modified files require
+re-approval.
+
+Key features:
+- Checksum-based file integrity verification
+- User confirmation prompts for untrusted files
+- Persistent cache of trusted files
+- Simple API for secure Lua file sourcing
+
+==============================================================================
+2. INSTALLATION                                       *luaguard-installation*
+
+Using vim-plug: >
+    Plug 'your-username/luaguard.nvim'
+<
+
+Using packer.nvim: >
+    use 'your-username/luaguard.nvim'
+<
+
+Using lazy.nvim: >
+    {
+      'your-username/luaguard.nvim',
+      config = function()
+        require('luaguard').setup()
+      end
+    }
+<
+
+Manual installation:
+Clone the repository to your Neovim configuration directory.
+
+==============================================================================
+3. CONFIGURATION                                     *luaguard-configuration*
+
+LuaGuard can be configured by passing options to the setup function.
+
+Setup function: >
+    require('luaguard').setup({
+      safe_cache_path = vim.fn.stdpath('data') .. '/luaguard.json'
+    })
+<
+
+Configuration options:                              *luaguard-config-options*
+
+`safe_cache_path`                                      *luaguard-cache-path*
+    Type: string
+    Default: `vim.fn.stdpath('data') .. '/luaguard.json'`
+    
+    Path where the trusted files cache will be stored. The cache contains
+    SHA256 checksums of previously approved files.
+
+==============================================================================
+4. USAGE                                                   *luaguard-usage*
+
+Basic usage involves calling the `source()` function or using the provided
+command to safely execute Lua files.
+
+When you attempt to source a file for the first time or after it has been
+modified, LuaGuard will:
+
+1. Calculate the SHA256 checksum of the file
+2. Compare it with the cached checksum (if any)
+3. If the checksums don't match or no cache entry exists:
+   - Display a confirmation prompt
+   - Require explicit "yes" input to proceed
+4. If approved, update the cache and execute the file
+5. If the checksum matches the cache, execute immediately
+
+==============================================================================
+5. COMMANDS                                             *luaguard-commands*
+
+                                                           *:SafeLuado*
+:SafeLuado [file]
+    Safely source the specified Lua file. If no file is provided, you may
+    be prompted to enter one.
+    
+    Example: >
+        :SafeLuado ~/.config/nvim/scripts/my-script.lua
+<
+
+==============================================================================
+6. FUNCTIONS                                           *luaguard-functions*
+
+luaguard.setup({opts})                               *luaguard.setup()*
+    Initialize the plugin with the given configuration options.
+    
+    Parameters: ~
+        {opts} (table) Configuration options (see |luaguard-config-options|)
+
+luaguard.source({path})                              *luaguard.source()*
+    Safely source a Lua file at the given path.
+    
+    Parameters: ~
+        {path} (string) Path to the Lua file to source
+    
+    The path will be normalized to an absolute path before processing.
+    If the file is not trusted (first time or modified), the user will be
+    prompted for confirmation.
+
+luaguard.file_checksum_nvim({filepath})              *luaguard.file_checksum_nvim()*
+    Calculate the SHA256 checksum of a file and return its content.
+    
+    Parameters: ~
+        {filepath} (string) Path to the file
+    
+    Returns: ~
+        {checksum} (string) SHA256 hash of the file content
+        {content} (string) The file content as a string
+    
+    Returns nil and error message if the file is not readable.
+
+==============================================================================
+7. EXAMPLES                                             *luaguard-examples*
+
+Basic setup: >
+    require('luaguard').setup()
+<
+
+Custom cache location: >
+    require('luaguard').setup({
+      safe_cache_path = vim.fn.expand('~/.cache/nvim/trusted-files.json')
+    })
+<
+
+Programmatic usage: >
+    local luaguard = require('luaguard')
+    luaguard.setup()
+    
+    -- This will prompt for confirmation if the file is not trusted
+    luaguard.source('~/.config/nvim/scripts/dangerous-script.lua')
+<
+
+Using the command: >
+    :SafeLuado ~/.config/nvim/lua/custom/init.lua
+<
+
+==============================================================================
+8. TROUBLESHOOTING                               *luaguard-troubleshooting*
+
+Problem: Cache file cannot be written
+    Error message: "Cannot write safe files cache: [path]"
+    Solution: Check file permissions and ensure the directory exists
+
+Problem: File not readable
+    Error message: "Fichier non lisible" (File not readable)
+    Solution: Verify the file exists and has proper read permissions
+
+Problem: Confirmation prompt not appearing
+    Solution: Ensure you're using a compatible Neovim version with vim.ui.input
+    support, or check if another plugin is interfering
+
+Debugging:
+    The plugin includes debug print statements that can be enabled by
+    uncommenting the print() calls in the source code for troubleshooting.
+
+==============================================================================
+9. CHANGELOG                                           *luaguard-changelog*
+
+Version 1.0:
+    - Initial release
+    - Basic trust-based file sourcing
+    - SHA256 checksum verification
+    - Persistent cache system
+    - SafeLuado command
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

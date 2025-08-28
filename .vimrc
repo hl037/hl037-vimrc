@@ -71,7 +71,8 @@ Plug 'Shougo/vimproc.vim', {'do' : 'make', 'merged':0}
 Plug 'tpope/vim-abolish'
 Plug 'vim-scripts/Emmet.vim'
 Plug 'scrooloose/nerdtree'
-Plug 'unkiwii/vim-nerdtree-sync'
+"Plug 'unkiwii/vim-nerdtree-sync'
+Plug 'moussaclarke/vim-nerdtree-sync', {'commit': '13a5201a6c5af5410af7591009b09427fd4e7428'}
 Plug '/usr/share/vim/vimfiles'
 "Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-fugitive'
@@ -86,6 +87,7 @@ Plug 'peterhoeg/vim-qml', {'for': ['qml']}
 Plug 'dbakker/vim-paragraph-motion'
 "Plug 'sheerun/vim-polyglot'
 Plug 'dylon/vim-antlr'
+Plug 'drmingdrmer/vim-indent-lua'
 
    """""""""""""""""""""""""""""""""""""
 "Plug 'davidhalter/jedi-vim', {'for':'python'}
@@ -104,25 +106,41 @@ Plug 'tpope/vim-repeat'
 Plug 'tpope/vim-surround'
 Plug 'senderle/restoreview'
 Plug 'AndrewRadev/sideways.vim' " Move expr in list
-   """""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""
 if !has('nvim')
-   Plug 'https://github.com/wgurecky/vimSum.git'
-   Plug 'roxma/nvim-yarp'
-   Plug 'roxma/vim-hug-neovim-rpc'
+  Plug 'https://github.com/wgurecky/vimSum.git'
+  Plug 'roxma/nvim-yarp'
+  Plug 'roxma/vim-hug-neovim-rpc'
 else
-   Plug 'https://github.com/wgurecky/vimSum.git', { 'do' : ':UpdateRemotePlugins' }
-   """""""""""""""""""""""""""""""""""""
-   " Auto completion
-   Plug 'williamboman/mason.nvim'
-   Plug 'williamboman/mason-lspconfig.nvim'
-   Plug 'neovim/nvim-lspconfig'
-   Plug 'hrsh7th/cmp-nvim-lsp'
-   Plug 'hrsh7th/cmp-buffer'
-   Plug 'hrsh7th/cmp-path'
-   Plug 'hrsh7th/cmp-cmdline'
-   Plug 'hrsh7th/nvim-cmp'
-   Plug 'quangnguyen30192/cmp-nvim-ultisnips'
-   Plug 'ray-x/lsp_signature.nvim'
+  Plug 'https://github.com/wgurecky/vimSum.git', { 'do' : ':UpdateRemotePlugins' }
+  Plug '~/.vim/me/pr0ject'
+  Plug '~/.vim/me/luaguard'
+  
+
+  """""""""""""""""""""""""""""""""""""
+  " Auto completion
+  Plug 'williamboman/mason.nvim'
+  Plug 'williamboman/mason-lspconfig.nvim'
+  Plug 'neovim/nvim-lspconfig'
+  Plug 'hrsh7th/cmp-nvim-lsp'
+  Plug 'hrsh7th/cmp-buffer'
+  Plug 'hrsh7th/cmp-path'
+  Plug 'hrsh7th/cmp-cmdline'
+  Plug 'hrsh7th/nvim-cmp'
+  Plug 'quangnguyen30192/cmp-nvim-ultisnips'
+  Plug 'ray-x/lsp_signature.nvim'
+  Plug 'folke/neodev.nvim'
+
+  " Debugging
+  Plug 'mfussenegger/nvim-dap'
+  Plug 'jay-babu/mason-nvim-dap.nvim'
+  Plug 'nvim-neotest/nvim-nio'
+  Plug 'rcarriga/nvim-dap-ui'
+  Plug 'mfussenegger/nvim-dap-python'
+  Plug 'nvim-telescope/telescope-dap.nvim'
+
+  " Python venv switcher
+  Plug 'linux-cultist/venv-selector.nvim'
 endif
 
 Plug 'nvim-lua/plenary.nvim'
@@ -147,6 +165,7 @@ call plug#end()
 source ~/.vim/supercontrol.vim
 
 luafile ~/.vim/.nvimrc.lua
+luafile ~/.vim/me.lua
 
 set vdir=~/.vim/view/
 
@@ -162,7 +181,7 @@ if !has('nvim')
   set <down>=OB 
   set <Down>=OB 
   set <right>=OC 
-  set <Right>=OC 
+  set <Right>=OC
   set <left>=OD 
   set <Left>=OD 
   " set <c-up>=[1;5A 
@@ -251,6 +270,11 @@ inoremap <c-x><c-k> <c-x><c-k>
 
 let g:NERDTreeMouseMode = 3
 let g:NERDTreeShowHidden = 1
+let g:NERDTreeWinPos = "left"
+map <leader>tt :NERDTree<CR>
+
+let g:nerdtree_sync_cursorline = 1
+let g:nerdtree_sync_excluded_patterns = '\v(^DAP.*)|dap-repl'
 
 let g:ctrlp_map = ''
 let g:ctrlp_working_path_mode = 'ra'
@@ -478,9 +502,6 @@ endfunction
 set noshowmode
 """ END Lightline conf
 
-let g:NERDTreeWinPos = "left"
-map <leader>tt :NERDTree<CR>
-
 let g:user_emmet_expandabbr_key = '<c-e>e'
 let g:user_emmet_leader_key  = '<c-e>'
 let g:user_emmet_next_key = '<c-l>'
@@ -686,29 +707,29 @@ endfunc
 
 " autocmd BufEnter * silent! lcd %:p:h
 
-let s:ntfind_lock = 0
-
-fun! s:ntfind()
-  if s:ntfind_lock || empty(expand('%:p'))
-    return
-  endif
-  if g:NERDTree.IsOpen()
-    let s:ntfind_lock = 1
-    let l:cur_win = winnr()
-    NERDTreeFocus
-    let l:nt_win = winnr()
-    if l:cur_win != l:nt_win
-      wincmd p
-      try
-        NERDTreeFind
-        wincmd p
-      catch /.*/
-      endtry
-    endif
-    let s:ntfind_lock = 0
-  endif
-endfun
-autocmd BufEnter * call s:ntfind()
+" let s:ntfind_lock = 0
+" 
+" fun! s:ntfind()
+"   if s:ntfind_lock || empty(expand('%:p'))
+"     return
+"   endif
+"   if g:NERDTree.IsOpen()
+"     let s:ntfind_lock = 1
+"     let l:cur_win = winnr()
+"     NERDTreeFocus
+"     let l:nt_win = winnr()
+"     if l:cur_win != l:nt_win
+"       wincmd p
+"       try
+"         NERDTreeFind
+"         wincmd p
+"       catch /.*/
+"       endtry
+"     endif
+"     let s:ntfind_lock = 0
+"   endif
+" endfun
+" autocmd BufEnter * call s:ntfind()
 
 command! GetColor call <SID>GetColor()
 function! <SID>GetColor()
@@ -816,3 +837,13 @@ nnoremap <silent> <c-w>o :call ToggleZoom(v:true)<CR>
 augroup restorezoom
     au WinEnter * silent! :call ToggleZoom(v:false)
 augroup END
+
+
+
+" Specify the behavior when switching between buffers 
+try
+  set switchbuf=useopen,usetab,uselast
+  set stal=2
+catch
+endtry
+
