@@ -27,17 +27,32 @@ cmp.setup.cmdline(':', {
   matching = { disallow_symbol_nonprefix_matching = false }
 })
 
+----------------------------
+-- Dap custom entries
+----------------------------
+
+local dap_custom_entries = {
+  function() return {
+    filetype = "py",
+    config = {
+      name = "Nearest test method",
+    },
+    exec_callback = require('dap-python').test_method
+  } end,
+}
+
+package.loaded['dap-custom-entries'] = dap_custom_entries
 
 ----------------------------
--- Dap replace :DapContinue with all languages
+-- Dap replace :DapContinue with all languages + custom entries
 ----------------------------
 
-local dap = require('dap')
-local pickers = require "telescope.pickers"
-local finders = require "telescope.finders"
-local conf = require("telescope.config").values
-local actions = require "telescope.actions"
-local action_state = require "telescope.actions.state"
+local dap = require"dap"
+local pickers = require"telescope.pickers"
+local finders = require"telescope.finders"
+local conf = require"telescope.config".values
+local actions = require"telescope.actions"
+local action_state = require"telescope.actions.state"
 
 -- Store original dap continue function
 local original_continue = dap.continue
@@ -50,6 +65,13 @@ local function telescope_dap_configurations()
         config = config,
         filetype = filetype
       })
+    end
+  end
+  
+  for _, entry_factory in ipairs(dap_custom_entries) do
+    local entry = entry_factory()
+    if entry ~= nil then
+      table.insert(all_configs, entry)
     end
   end
 
@@ -71,7 +93,11 @@ local function telescope_dap_configurations()
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
         local selection = action_state.get_selected_entry()
-        dap.run(selection.value.config)
+        if selection.value.exec_callback ~= nil then
+          selection.value.exec_callback()
+        else
+          dap.run(selection.value.config)
+        end
       end)
       return true
     end,
@@ -121,4 +147,26 @@ vim.api.nvim_create_autocmd("User", {
    dap_orig_config = vim.deepcopy(require'dap'.configurations)
    require'dap.ext.vscode'.load_launchjs()
  end,
+})
+
+
+----------------------------
+-- Dolphin and Konsole
+----------------------------
+
+
+vim.api.nvim_create_user_command("Dolphin", function()
+  vim.fn.jobstart({'dolphin', '--new-window', vim.fn.getcwd()},{
+    detach = true
+  })
+end, {
+  desc = "Open Dolphin in current directory"
+})
+  
+vim.api.nvim_create_user_command("Konsole", function()
+  vim.fn.jobstart({'konsole', '--workdir', vim.fn.getcwd()},{
+    detach = true
+  })
+end, {
+  desc = "Open Dolphin in current directory"
 })

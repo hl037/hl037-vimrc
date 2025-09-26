@@ -395,3 +395,5 @@ map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
 map <leader>a :VisMath()<Left>
 
 map <leader><leader><leader>ps :ProjectSwitch<cr>
+
+map <leader>r :lua vim.lsp.buf.rename()<cr>

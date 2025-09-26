@@ -183,6 +183,21 @@ vim.lsp.config('ts_ls', {
   },
 })
 
+vim.lsp.config("pylsp", {
+  settings = {
+    pylsp = {
+      plugins = {
+        pyflakes = { enabled = false },
+        pycodestyle = { enabled = false },
+        mccabe = { enabled = false },
+        yapf = { enabled = true },
+      },
+    },
+  },
+})
+
+vim.lsp.config('pyright', {})
+
 -- Telescope
 local telescope, builtin = require('telescope'), require('telescope.builtin')
 
@@ -216,7 +231,7 @@ local dapui = require('dapui')
 
 -- Configuration de mason-nvim-dap
 require('mason-nvim-dap').setup({
-  ensure_installed = { 'codelldb' }, -- ou 'cppdbg' selon ta préférence
+  ensure_installed = { 'codelldb', 'cppdbg' }, -- ou 'cppdbg' selon ta préférence
   automatic_installation = true,
 })
 
@@ -258,7 +273,10 @@ require('dap').defaults.fallback.open = function(fname)
   vim.cmd('edit ' .. fname)
 end
 
-require"dap-python".setup("python")
+local dap_python = require"dap-python"
+
+dap_python.setup("python")
+dap_python.test_runner = "pytest"
 
 
 -- Python venv switcher (enable only cwd)
