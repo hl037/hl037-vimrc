@@ -383,6 +383,9 @@ map <F12>        <cmd>DapStepOut<CR>
 map -    <cmd>lua require'dap'.up()<CR>
 map +    <cmd>lua require'dap'.down()<CR>
 
+map <leader><leader>e <cmd>lua require'dapui'.eval()<CR>
+
+
 
 map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
 map <silent> <leader>ee :bufdo e!<cr>
