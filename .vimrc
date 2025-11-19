@@ -296,29 +296,6 @@ let g:ctrlp_buffer_func = { 'enter': 'CtrlP_HL_enter', }
 " "nmap <leader>fl :BLines<cr>
 " 
 
-nmap <leader>fll <cmd>lua FuzzyFindFiles{}<cr>
-nmap <leader>flb <cmd>Telescope current_buffer_fuzzy_find<cr>
-nmap <leader>fff <cmd>Telescope find_files<cr>
-nmap <leader>ffb <cmd>Telescope buffers<cr>
-
-
-nmap <leader>;          <leader>fll
-nmap <leader><leader>;  <leader>flb
-nmap <leader>: <leader>fff
-nmap <leader><leader>: <leader>ffb
-nmap <leader>! <cmd>Telescope lsp_dynamic_workspace_symbols<cr>
-nmap <leader><leader>! <cmd>Telescope lsp_document_symbols<cr>
-
-nmap <leader>gg <Plug>KangarooPush<cmd>Telescope lsp_definitions<cr>
-nmap <leader><leader>g <Plug>KangarooPush<cmd>Telescope lsp_definitions<cr>
-nmap <leader>gr <cmd>Telescope lsp_references<cr>
-nmap <leader>gi <cmd>Telescope lsp_incoming_calls<cr>
-nmap <leader>go <cmd>Telescope lsp_outgoing_calls<cr>
-nmap <leader>gs <cmd>Telescope lsp_dynamic_workspace_symbols<cr>
-nmap <leader>gy <cmd>Telescope lsp_implementations<cr>
-nmap <leader>gt <cmd>Telescope lsp_lsp_type_definitions<cr>
-nmap <leader>ss <cmd>Telescope spell_suggest<cr>
-
 
 " let g:fzf_colors = {
 "   \ 'fg':      ['fg', 'Normal'],
