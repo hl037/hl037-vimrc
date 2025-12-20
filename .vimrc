@@ -117,6 +117,7 @@ else
   Plug '~/.vim/me/nvim-dap-memory-view'
   Plug '~/.vim/me/luaguard'
   
+  
 
   """""""""""""""""""""""""""""""""""""
   " Auto completion
@@ -139,17 +140,19 @@ else
   Plug 'rcarriga/nvim-dap-ui'
   Plug 'mfussenegger/nvim-dap-python'
   Plug 'nvim-telescope/telescope-dap.nvim'
-
+  
+  Plug 'nvim-lua/plenary.nvim'
+  Plug 'nvim-telescope/telescope.nvim'
+  Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
+  
   " Python venv switcher
   Plug 'linux-cultist/venv-selector.nvim'
+  
+  Plug 'folke/trouble.nvim'
 endif
 
-Plug 'nvim-lua/plenary.nvim'
-Plug 'nvim-telescope/telescope.nvim'
-Plug 'nvim-telescope/telescope-fzf-native.nvim', { 'do': 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release' }
 Plug 'airblade/vim-rooter'
 
-Plug 'folke/trouble.nvim'
 
 
 Plug 'iloginow/vim-stylus'
@@ -591,6 +594,7 @@ function! VisualSelection(direction) range
     let l:pattern = escape(@", '\\/.*$^~[]')
     let l:pattern = substitute(l:pattern, "\n$", "", "")
 
+
     if a:direction == 'b'
         execute "normal ?" . l:pattern . "^M"
     elseif a:direction == 'gv'
@@ -603,6 +607,7 @@ function! VisualSelection(direction) range
         call CmdLine("g" . '/'. l:pattern . '/normal ')
     elseif a:direction == 'f'
         execute "normal /" . l:pattern . "^M"
+    elseif a:direction == 'm'
     endif
 
     let @/ = l:pattern

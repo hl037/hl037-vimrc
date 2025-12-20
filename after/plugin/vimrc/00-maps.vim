@@ -166,9 +166,12 @@ set wrap "Wrap lines
 """"""""""""""""""""""""""""""
 " Visual mode pressing * or # searches for the current selection
 " Super useful! From an idea by Michael Naumann
-vnoremap <silent> * :call VisualSelection('f')<CR>
+vnoremap <silent> * :call VisualSelection('m')<CR>
 vnoremap <silent> # :call VisualSelection('b')<CR>
 vnoremap <silent> <leader>* :call VisualSelection('b')<CR>
+
+nnoremap * *N
+nnoremap <leader>* #
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -273,9 +276,10 @@ vmap <special> <c-;> A;<esc>
 vnoremap <silent> gv :call VisualSelection('gv')<CR>
 
 " When you press <leader>r you can search and replace the selected text
-vnoremap <silent> <leader><leader>r :call VisualSelection('replace')<CR>
-vnoremap <silent> <leader><leader>s :call VisualSelection('sub')<CR>
-vnoremap <silent> <leader><leader>n :call VisualSelection('normal')<CR>
+" NOTE : replaced by lsp.
+" vnoremap <silent> <leader><leader>r :call VisualSelection('replace')<CR>
+" vnoremap <silent> <leader><leader>s :call VisualSelection('sub')<CR>
+" vnoremap <silent> <leader><leader>n :call VisualSelection('normal')<CR>
 
 " Do :help cope if you are unsure what cope is. It's super useful!
 "
@@ -392,10 +396,6 @@ map <leader>r :lua vim.lsp.buf.rename()<CR>
 
 map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
 
-map <leader>a :VisMath()<Left>
-
-map <leader>r :lua vim.lsp.buf.rename()<cr>
-
 map <silent> <leader>sw :Mksession _me_vimsession.vim<cr>
 nmap <leader>fll <cmd>lua FuzzyFindFiles{}<cr>
 nmap <leader>flb <cmd>Telescope current_buffer_fuzzy_find<cr>
@@ -410,7 +410,6 @@ nmap <leader><leader>: <leader>ffb
 nmap <leader>! <cmd>Telescope lsp_dynamic_workspace_symbols<cr>
 nmap <leader><leader>! <cmd>Telescope lsp_document_symbols<cr>
 
-map <leader>r :lua vim.lsp.buf.rename()<cr>
 nmap <leader>gg <Plug>KangarooPush<cmd>Telescope lsp_definitions<cr>
 nmap <leader><leader>g <Plug>KangarooPush<cmd>Telescope lsp_definitions<cr>
 nmap <leader>gr <cmd>Telescope lsp_references<cr>
