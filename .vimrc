@@ -115,6 +115,7 @@ else
   Plug 'https://github.com/wgurecky/vimSum.git', { 'do' : ':UpdateRemotePlugins' }
   Plug '~/.vim/me/pr0ject'
   Plug '~/.vim/me/nvim-dap-memory-view'
+  Plug '~/.vim/me/nvim-dap-embassy-inspect'
   Plug '~/.vim/me/luaguard'
   
   
@@ -139,6 +140,7 @@ else
   Plug 'nvim-neotest/nvim-nio'
   Plug 'rcarriga/nvim-dap-ui'
   Plug 'mfussenegger/nvim-dap-python'
+  Plug 'https://codeberg.org/Jorenar/nvim-dap-disasm.git'
   Plug 'nvim-telescope/telescope-dap.nvim'
   
   Plug 'nvim-lua/plenary.nvim'

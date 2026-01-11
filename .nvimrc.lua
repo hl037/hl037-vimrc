@@ -379,6 +379,38 @@ local dap_python = require"dap-python"
 dap_python.setup("python")
 dap_python.test_runner = "pytest"
 
+require("dap-disasm").setup({
+  -- Add disassembly view to elements of nvim-dap-ui
+  dapui_register = true,
+
+  -- Show winbar with buttons to step into the code with instruction granularity
+  -- This settings is overriden (disabled) if the dapview integration is enabled and the plugin is installed
+  winbar = true,
+
+  -- The sign to use for instruction the exectution is stopped at
+  sign = "DapStopped",
+
+  -- Number of instructions to show before the memory reference
+  ins_before_memref = 32,
+
+  -- Number of instructions to show after the memory reference
+  ins_after_memref = 32,
+
+  -- Labels of buttons in winbar
+  controls = {
+    step_into = "Step Into",
+    step_over = "Step Over",
+    step_back = "Step Back",
+  },
+
+  -- Columns to display in the disassembly view
+  columns = {
+    "address",
+    "instructionBytes",
+    "instruction",
+  },
+})
+
 
 -- Python venv switcher (enable only cwd)
 require'venv-selector'.setup{
@@ -400,4 +432,5 @@ require'venv-selector'.setup{
 
 require'pr0ject'.setup()
 require'luaguard'.setup()
+require'embassy-inspect'.setup()
 
