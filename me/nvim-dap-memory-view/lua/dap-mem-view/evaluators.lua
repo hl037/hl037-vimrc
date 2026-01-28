@@ -6,7 +6,13 @@ M.default_evaluator = {
     return expr
   end,
   parse_response = function(res)
-    return tonumber(res.result)
+    local success, result = pcall(function()
+      return tonumber(res.result)
+    end)
+    if not success then
+      return nil
+    end
+    return result
   end,
 }
 
