@@ -116,6 +116,7 @@ else
   Plug '~/.vim/me/pr0ject'
   Plug '~/.vim/me/nvim-dap-memory-view'
   Plug '~/.vim/me/nvim-dap-embassy-inspect'
+  Plug 'hl037/nvim-dap-ghidra-sync'
   Plug '~/.vim/me/luaguard'
   
   

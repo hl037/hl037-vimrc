@@ -13,7 +13,7 @@ cmp.setup({
   snippet = {
     -- REQUIRED - you must specify a snippet engine
     expand = function(args)
-      vim.fn["UltiSnps#Anon"](args.body)
+      vim.fn["UltiSnips#Anon"](args.body)
       -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
       -- require('snippy').expand_snippet(args.body) -- For `snippy` users.
       -- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
@@ -432,5 +432,7 @@ require'venv-selector'.setup{
 
 require'pr0ject'.setup()
 require'luaguard'.setup()
-require'embassy-inspect'.setup()
+-- require'embassy-inspect'.setup()
+require'dap-ghidra-sync'.setup()
+
 

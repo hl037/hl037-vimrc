@@ -1,0 +1,82 @@
+global !p
+from vim_hl037.UltiSnips import *
+endglobal
+
+
+snippet s "struct" b
+struct $1 {
+	$0
+}
+endsnippet
+
+snippet ps "pub struct" b
+pub struct $1 {
+	$0
+}
+endsnippet
+
+snippet f "function" b
+fn $1($2)$3{
+	$0
+}
+endsnippet
+
+snippet pf "pub function" b
+pub fn $1($2)$3{
+	$0
+}
+endsnippet
+
+snippet m "method" b
+fn $1(&self, $2)$3{
+	$0
+}
+endsnippet
+
+snippet pm "pub method" b
+pub fn $1(&self, $2)$3{
+	$0
+}
+endsnippet
+
+context "eol(snip)"
+snippet "if " "if" brA
+if $1 {
+	$2
+}
+endsnippet
+
+context "eol(snip)"
+snippet "elif " "elif" brA
+else if $1 {
+	$2
+}
+endsnippet
+
+context "eol(snip)"
+snippet "else " "else" brA
+else {
+	$2
+}
+endsnippet
+
+context "eol(snip)"
+snippet "while " "while" brA
+while $1 {
+	$2
+}
+endsnippet
+
+context "eol(snip)"
+snippet "loop " "loop" brA
+loop {
+	$2
+}
+endsnippet
+
+context "eol(snip)"
+snippet "match " "match" brA
+match $1 {
+	$2
+}
+endsnippet
