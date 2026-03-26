@@ -28,7 +28,7 @@ cmp.setup.cmdline(':', {
 })
 
 ----------------------------
--- Dap custom entries
+-- Dap custom entries (for direct function call and dynamic dap configs)
 ----------------------------
 
 local dap_custom_entries = {
@@ -42,6 +42,8 @@ local dap_custom_entries = {
 }
 
 package.loaded['dap-custom-entries'] = dap_custom_entries
+
+
 
 ----------------------------
 -- Dap replace :DapContinue with all languages + custom entries
@@ -113,6 +115,73 @@ dap.continue = function(opts)
   -- Else, launch the picker
   telescope_dap_configurations()
 end
+  
+----------------------------
+-- Project auto commands
+----------------------------
+
+require'treeasy'.set_colors('filetreeasy', {
+  current = {
+    bold = true,
+    fg = "#ffffff"
+  },
+  dir = {
+    fg = "#7aa2f7"
+  },
+  ft_header = {
+    bold = true,
+    fg = "#565f89"
+  },
+  ft_root_delete = {
+    bold = true,
+    fg = "#f7768e"
+  },
+  ft_root_path = {
+    bold = true,
+    fg = "#ffd454"
+  },
+  git_conflict = {
+    fg = "#f7768e"
+  },
+  git_conflict_name = {
+    fg = "#f7768e",
+    underline = true
+  },
+  git_deleted = {
+    fg = "#f7768e"
+  },
+  git_ignored = {
+    fg = "#565f89"
+  },
+  git_modified = {
+    fg = "#e0af68"
+  },
+  git_renamed = {
+    fg = "#bb9af7"
+  },
+  git_staged = {
+    fg = "#9ece6a"
+  },
+  git_untracked = {
+    fg = "#7dcfff"
+  },
+  modified = {
+    fg = "#e0af68"
+  },
+  pick_win = {
+    fg = "#414868"
+  },
+  pick_win_active = {
+    bold = true,
+    fg = "#e0af68"
+  },
+  symlink = {
+    italic = true
+  },
+  visible = {
+    fg = "#c0caf5"
+  }
+})
 
 
 ----------------------------
@@ -124,7 +193,7 @@ local dap_orig_config = nil
 vim.api.nvim_create_autocmd("User", {
   pattern = "BeforeProjectChanged",
   callback = function()
-    vim.cmd("NERDTreeClose")
+    vim.cmd("FileTreeClose")
     if dap_orig_config ~= nil then
       require'dap'.configurations  = dap_orig_config
     end
@@ -134,7 +203,7 @@ vim.api.nvim_create_autocmd("User", {
 vim.api.nvim_create_autocmd("User", {
  pattern = "ProjectChanged",
  callback = function()
-   vim.cmd("NERDTree")
+   vim.cmd("FileTreeOpen")
    if file_exists('./.nvim/rc') then
      vim.cmd('source ./.nvim/rc')
    end
@@ -169,4 +238,12 @@ vim.api.nvim_create_user_command("Konsole", function()
   })
 end, {
   desc = "Open Dolphin in current directory"
+})
+
+-- DEBUG
+
+vim.api.nvim_create_user_command("SelfDebug", function()
+  require"osv".launch({port = 8086}) 
+end, {
+  desc = "Start OSV dap server"
 })

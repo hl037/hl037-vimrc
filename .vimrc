@@ -70,9 +70,9 @@ Plug 'Shougo/deol.nvim'
 Plug 'Shougo/vimproc.vim', {'do' : 'make', 'merged':0}
 Plug 'tpope/vim-abolish'
 Plug 'vim-scripts/Emmet.vim'
-Plug 'scrooloose/nerdtree'
-"Plug 'unkiwii/vim-nerdtree-sync'
-Plug 'moussaclarke/vim-nerdtree-sync', {'commit': '13a5201a6c5af5410af7591009b09427fd4e7428'}
+" Plug 'scrooloose/nerdtree'
+" Plug 'unkiwii/vim-nerdtree-sync'
+" Plug 'moussaclarke/vim-nerdtree-sync', {'commit': '13a5201a6c5af5410af7591009b09427fd4e7428'}
 Plug '/usr/share/vim/vimfiles'
 "Plug 'junegunn/fzf.vim'
 Plug 'tpope/vim-fugitive'
@@ -118,6 +118,9 @@ else
   Plug '~/.vim/me/nvim-dap-embassy-inspect'
   Plug 'hl037/nvim-dap-ghidra-sync'
   Plug '~/.vim/me/luaguard'
+  Plug 'hl037/treeasy.nvim'
+  Plug 'hl037/filetreeasy.nvim'
+  Plug 'hl037/outlineasy.nvim'
   
   
 
@@ -143,6 +146,7 @@ else
   Plug 'mfussenegger/nvim-dap-python'
   Plug 'https://codeberg.org/Jorenar/nvim-dap-disasm.git'
   Plug 'nvim-telescope/telescope-dap.nvim'
+  Plug 'jbyuki/one-small-step-for-vimkind'
   
   Plug 'nvim-lua/plenary.nvim'
   Plug 'nvim-telescope/telescope.nvim'
@@ -275,13 +279,13 @@ let g:UltiSnipsSnippetsDir = '~/.vim/UltiSnips'
 let g:UltiSnipsSnippetStorageDirectoryForUltiSnipsEdit= '~/.vim/UltiSnips'
 inoremap <c-x><c-k> <c-x><c-k>
 
-let g:NERDTreeMouseMode = 3
-let g:NERDTreeShowHidden = 1
-let g:NERDTreeWinPos = "left"
-map <leader>tt :NERDTree<CR>
+" let g:NERDTreeMouseMode = 3
+" let g:NERDTreeShowHidden = 1
+" let g:NERDTreeWinPos = "left"
+" map <leader>tt :NERDTree<CR>
 
-let g:nerdtree_sync_cursorline = 1
-let g:nerdtree_sync_excluded_patterns = '\v(^DAP.*)|dap-repl'
+" let g:nerdtree_sync_cursorline = 1
+" let g:nerdtree_sync_excluded_patterns = '\v(^DAP.*)|dap-repl'
 
 let g:ctrlp_map = ''
 let g:ctrlp_working_path_mode = 'ra'
@@ -662,15 +666,15 @@ function <SID>Help2Md()
   .,$s/\(.*\)\_s------*/## \1/
 endfunction
 
-fun! Mksession(name)
-    let need_tree = g:NERDTree.IsOpen()
-    NERDTreeClose
-    execute "mksession! " . a:name
-    if need_tree
-        call writefile(readfile(a:name)+['NERDTree'], a:name)
-        NERDTree
-    endif
-endfun
+" fun! Mksession(name)
+"     let need_tree = g:NERDTree.IsOpen()
+"     NERDTreeClose
+"     execute "mksession! " . a:name
+"     if need_tree
+"         call writefile(readfile(a:name)+['NERDTree'], a:name)
+"         NERDTree
+"     endif
+" endfun
 
 command! -nargs=1 Mksession call Mksession(<f-args>)
 

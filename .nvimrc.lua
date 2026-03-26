@@ -413,26 +413,54 @@ require("dap-disasm").setup({
 
 
 -- Python venv switcher (enable only cwd)
-require'venv-selector'.setup{
-  options = {
-    enable_default_searches = false,            -- switches all default searches on/off
-    enable_cached_venvs = true,                -- use cached venvs that are activated automatically when a python file is registered with the LSP.
-    cached_venv_automatic_activation = true,   -- if set to false, the VenvSelectCached command becomes available to manually activate them.
-    activate_venv_in_terminal = true,          -- activate the selected python interpreter in terminal windows opened from neovim
-    set_environment_variables = true,          -- sets VIRTUAL_ENV or CONDA_PREFIX environment variables
-    notify_user_on_venv_activation = false,    -- notifies user on activation of the virtual env
-    search_timeout = 5,                        -- if a search takes longer than this many seconds, stop it and alert the user
-    debug = false,                             -- enables you to run the VenvSelectLog command to view debug logs
-    require_lsp_activation = false,             -- require activation of an lsp before setting env variables
+require('venv-selector').setup({
+  settings = {
+    options = {
+      notify_user_on_venv_activation = false,
+      set_environment_variables = true,
+      activate_venv_in_terminal = true,
+    },
+    search = {
+      -- On définit uniquement la recherche dans le dossier de travail
+      my_cwd_search = {
+        command = "fd 'bin/python$' --full-path --color never -E /proc -E /sys -E /dev",
+      },
+    },
   },
-  search = {
-    cwd = require'venv-selector.config'.get_default_searches()().cwd,
-  }
-}
+})
 
 require'pr0ject'.setup()
 require'luaguard'.setup()
 -- require'embassy-inspect'.setup()
 require'dap-ghidra-sync'.setup()
 
+
+require("filetreeasy").setup({
+  width    = 20,
+  side     = "left",    -- "left" | "right"
+  devicons = false,     -- opt-in: requires nvim-web-devicons
+  icons    = {
+    dir_open   = "▾ ",
+    dir_closed = "▸ ",
+    file       = "",
+    modified   = "●",
+  },
+
+  buffer_sync            = true,   -- auto-reveal current file in tree on BufEnter
+  auto_close_empty_roots = true,  -- remove alt roots when all their buffers close
+  collapse_alt_on_switch = true,  -- collapse alt roots when switching to another root
+
+  plugins = {
+    require("filetreeasy.plugins.git"),
+    require("filetreeasy.plugins.pick_win"),
+  },
+})
+
+
+require("outlineasy").setup({
+  scope = "file",   -- default scope: "file" | "module" | "all"
+  width = 20,       -- sidebar width in columns
+  side  = "right",   -- "left" | "right"
+  icons = false,     -- false = no nerd-font icons (symbol kinds + file types)
+})
 
