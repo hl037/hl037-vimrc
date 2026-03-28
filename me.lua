@@ -1,5 +1,14 @@
 local cmp = require'cmp'
 
+local dap = require"dap"
+local pickers = require"telescope.pickers"
+local finders = require"telescope.finders"
+local conf = require"telescope.config".values
+local actions = require"telescope.actions"
+local action_state = require"telescope.actions.state"
+local make_entry = require("telescope.make_entry")
+local previewers = require("telescope.previewers")
+
 local function file_exists(name)
    local f=io.open(name,"r")
    if f~=nil then io.close(f) return true else return false end
@@ -48,13 +57,6 @@ package.loaded['dap-custom-entries'] = dap_custom_entries
 ----------------------------
 -- Dap replace :DapContinue with all languages + custom entries
 ----------------------------
-
-local dap = require"dap"
-local pickers = require"telescope.pickers"
-local finders = require"telescope.finders"
-local conf = require"telescope.config".values
-local actions = require"telescope.actions"
-local action_state = require"telescope.actions.state"
 
 -- Store original dap continue function
 local original_continue = dap.continue
@@ -220,7 +222,7 @@ vim.api.nvim_create_autocmd("User", {
 
 
 ----------------------------
--- Dolphin and Konsole
+-- Custom commands
 ----------------------------
 
 
@@ -247,3 +249,133 @@ vim.api.nvim_create_user_command("SelfDebug", function()
 end, {
   desc = "Start OSV dap server"
 })
+
+-- RG
+
+local NS = vim.api.nvim_create_namespace("telescope_rg_match")
+
+-- ─── helpers ─────────────────────────────────────────────────────────────────
+
+local function base_cmd(extra_args)
+  return vim.list_extend({ "rg", "--smart-case" }, extra_args)
+end
+
+local function parse_args(opts)
+  return vim.split(opts.args, "%s+", { trimempty = true })
+end
+
+-- Add fuzzy prompt highlight in the preview window.
+-- Uses vim's `matchadd` with the Search hl group so it feels native.
+local function highlight_prompt_in_preview(winid, prompt)
+  if not prompt or #prompt == 0 then return end
+  vim.api.nvim_win_call(winid, function()
+    pcall(vim.fn.clearmatches)
+    pcall(vim.fn.matchadd, "Search", vim.fn.escape(prompt, "\\/.*$^~[]"))
+  end)
+end
+
+-- ─── :TelescopeRG (json, rg match in results + fuzzy in preview) ─────────────
+
+local function json_entry_maker(line)
+  local ok, parsed = pcall(vim.json.decode, line)
+  if not ok or parsed.type ~= "match" then return nil end
+
+  local data     = parsed.data
+  local filename = data.path.text
+  local lnum     = data.line_number
+  local sub      = data.submatches[1]
+  local text     = (data.lines.text or ""):gsub("\n$", "")
+  local prefix   = filename .. ":" .. lnum .. ": "
+
+  return {
+    value    = filename .. ":" .. lnum .. ":" .. sub.start .. ":" .. text,
+    -- display returns (string, highlights) to mark the rg match in the results list
+    display  = function(_)
+      local hl_start = #prefix + sub.start
+      local hl_end   = #prefix + sub["end"]
+      return prefix .. text, { { { hl_start, hl_end }, "TelescopePreviewMatch" } }
+    end,
+    ordinal  = filename .. " " .. text,
+    filename = filename,
+    lnum     = lnum,
+    col      = sub.start,
+    col_end  = sub["end"],
+  }
+end
+
+local json_previewer = previewers.new_buffer_previewer({
+  title = "Preview",
+  get_buffer_by_name = function(_, entry) return entry.filename end,
+  define_preview = function(self, entry, status)
+    conf.buffer_previewer_maker(entry.filename, self.state.bufnr, {
+      bufname  = self.state.bufname,
+      winid    = self.state.winid,
+      callback = function(bufnr)
+        -- scroll to match
+        pcall(vim.api.nvim_win_set_cursor, self.state.winid, { entry.lnum, entry.col })
+        vim.api.nvim_win_call(self.state.winid, function() vim.cmd("normal! zz") end)
+
+        -- rg exact match highlight (extmark)
+        vim.api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
+        vim.api.nvim_buf_add_highlight(
+          bufnr, NS, "TelescopePreviewMatch",
+          entry.lnum - 1, entry.col, entry.col_end
+        )
+
+        -- fuzzy query highlight (matchadd in window)
+        highlight_prompt_in_preview(self.state.winid, status.picker:_get_prompt())
+      end,
+    })
+  end,
+})
+
+vim.api.nvim_create_user_command("TelescopeRG", function(opts)
+  local args = parse_args(opts)
+  pickers.new({}, {
+    prompt_title = "rg " .. opts.args,
+    finder  = finders.new_oneshot_job(
+      vim.list_extend(base_cmd(args), { "--json" }),
+      { entry_maker = json_entry_maker }
+    ),
+    previewer = json_previewer,
+    sorter    = conf.generic_sorter({}),
+  }):find()
+end, { nargs = "+", desc = "rg --json: rg match highlight in results + fuzzy in preview" })
+
+-- ─── :TelescopeRGfast (vimgrep, fuzzy highlight in preview only) ─────────────
+
+local fast_previewer = previewers.new_buffer_previewer({
+  title = "Preview",
+  get_buffer_by_name = function(_, entry) return entry.filename end,
+  define_preview = function(self, entry, status)
+    conf.buffer_previewer_maker(entry.filename, self.state.bufnr, {
+      bufname  = self.state.bufname,
+      winid    = self.state.winid,
+      callback = function(bufnr)
+        -- scroll to match
+        local col = (entry.col or 1) - 1
+        pcall(vim.api.nvim_win_set_cursor, self.state.winid, { entry.lnum, col })
+        vim.api.nvim_win_call(self.state.winid, function() vim.cmd("normal! zz") end)
+
+        -- fuzzy query highlight
+        highlight_prompt_in_preview(self.state.winid, status.picker:_get_prompt())
+
+        -- suppress unused warning: bufnr is used implicitly via buffer_previewer_maker
+        _ = bufnr
+      end,
+    })
+  end,
+})
+
+vim.api.nvim_create_user_command("TelescopeRGfast", function(opts)
+  local args = parse_args(opts)
+  pickers.new({}, {
+    prompt_title = "rg (fast) " .. opts.args,
+    finder  = finders.new_oneshot_job(
+      vim.list_extend(base_cmd(args), { "--color=never", "--vimgrep" }),
+      { entry_maker = make_entry.gen_from_vimgrep({}) }
+    ),
+    previewer = fast_previewer,
+    sorter    = conf.generic_sorter({}),
+  }):find()
+end, { nargs = "+", desc = "rg --vimgrep: fast stream, fuzzy highlight in preview" })

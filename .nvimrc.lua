@@ -303,6 +303,18 @@ vim.lsp.config('pyright', {})
 local telescope, builtin = require('telescope'), require('telescope.builtin')
 
 telescope.setup{
+  defaults = {
+    mappings = {
+      i = {
+        -- Naviguer dans l'historique des recherches
+        ["<C-Down>"] = require('telescope.actions').cycle_history_next,
+        ["<C-Up>"] = require('telescope.actions').cycle_history_prev,
+        
+        -- Note : <C-n> et <C-p> restent souvent utiles pour 
+        -- naviguer dans la liste des résultats eux-mêmes.
+      },
+    },
+  },
 }
 
 telescope.load_extension('fzf')        -- without this there's no 'foo | ^bar | baz$' style filtering
