@@ -120,7 +120,7 @@ else
   Plug '~/.vim/me/luaguard'
   Plug 'hl037/treeasy.nvim'
   Plug 'hl037/filetreeasy.nvim'
-  Plug '~/projects/outlineasy.nvim'
+  Plug 'hl037/outlineasy.nvim'
   
   
 
