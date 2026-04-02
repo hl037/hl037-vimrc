@@ -306,12 +306,21 @@ local json_previewer = previewers.new_buffer_previewer({
 })
 
 vim.api.nvim_create_user_command("TelescopeRG", function(opts)
+  local path = nil
+  require'filetreeasy.views'.each(function(v)
+    if path == nil then
+      path = v.tree.root.children[2].path
+    end
+  end)
   local args = parse_args(opts)
   pickers.new({}, {
     prompt_title = "rg " .. opts.args,
     finder  = finders.new_oneshot_job(
       vim.list_extend(base_cmd(args), { "--json" }),
-      { entry_maker = json_entry_maker }
+      {
+        entry_maker = json_entry_maker,
+        cwd = path
+      }
     ),
     previewer = json_previewer,
     sorter    = conf.generic_sorter({}),
@@ -344,12 +353,20 @@ local fast_previewer = previewers.new_buffer_previewer({
 })
 
 vim.api.nvim_create_user_command("TelescopeRGfast", function(opts)
+  require'filetreeasy.views'.each(function(v)
+    if path == nil then
+      path = v.tree.root.children[2].path
+    end
+  end)
   local args = parse_args(opts)
   pickers.new({}, {
     prompt_title = "rg (fast) " .. opts.args,
     finder  = finders.new_oneshot_job(
       vim.list_extend(base_cmd(args), { "--color=never", "--vimgrep" }),
-      { entry_maker = make_entry.gen_from_vimgrep({}) }
+      {
+        entry_maker = make_entry.gen_from_vimgrep({}),
+        cwd = path
+      }
     ),
     previewer = fast_previewer,
     sorter    = conf.generic_sorter({}),

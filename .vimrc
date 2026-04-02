@@ -234,6 +234,8 @@ endif
 set maxmempattern=100000
 setglobal nomodeline
 
+set noequalalways
+
 " vim-rooter
 
 let g:rooter_patterns = ['.git', 'pyproject.tom', 'setup.py', 'labs_build.py', 'package.json']
