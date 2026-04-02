@@ -389,7 +389,7 @@ map +    <cmd>lua require'dap'.down()<CR>
 map <leader><leader>e <cmd>lua require'dapui'.eval()<CR>
 map <leader>i :lua vim.lsp.buf.hover()<CR>
 map <leader>h :lua vim.lsp.buf.typehierarchy()<CR>
-map K :lua vim.lsp.buf.signature_help()<CR>
+map K :lua vim.lsp.buf.hover()<CR>
 map <leader>a :lua vim.lsp.buf.code_action()<CR>
 map <leader>r :lua vim.lsp.buf.rename()<CR>
 
