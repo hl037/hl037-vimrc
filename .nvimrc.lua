@@ -1,91 +1,131 @@
--- neodev (deprecated, but let's try)
 
--- IMPORTANT: make sure to setup neodev BEFORE lspconfig
-require("neodev").setup({
-  -- add any options here, or leave empty to use the default settings
-})
+require('lazydev').setup()
 
--- Set up nvim-cmp.
-local cmp = require'cmp'
-cmp.types = require'cmp.types'
+local blink_cmp_use_lua = os.getenv('HOST_ENV') == 'bnpp'
 
-cmp.setup({
-  snippet = {
-    -- REQUIRED - you must specify a snippet engine
-    expand = function(args)
-      vim.fn["UltiSnips#Anon"](args.body)
-      -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
-      -- require('snippy').expand_snippet(args.body) -- For `snippy` users.
-      -- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
-      -- vim.snippet.expand(args.body) -- For native neovim snippets (Neovim v0.10+)
-    end,
+require('blink.cmp').setup({
+  keymap = {
+    ['<C-space>']   = { 'show_and_insert', 'select_next', 'fallback' },
+    ['<C-S-space>'] = { 'select_prev', 'fallback' },
+    ['<C-c>']       = { 'hide', 'fallback' },
+    ['<CR>']        = { 'accept', 'fallback' },
+    ['<C-CR>']      = { 'accept', 'fallback' },
+    ['<Down>']      = { 'select_next', 'fallback' },
+    ['<Up>']        = { 'select_prev', 'fallback' },
+    ['<C-j>']       = { 'select_next', 'fallback' },
+    ['<C-k>']       = { 'select_prev', 'fallback' },
+    ['<C-b>']       = { 'scroll_documentation_up', 'fallback' },
+    ['<C-f>']       = { 'scroll_documentation_down', 'fallback' },
   },
-  window = {
-    -- completion = cmp.config.window.bordered(),
-    -- documentation = cmp.config.window.bordered(),
-  },
-  mapping = cmp.mapping.preset.insert({
-    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-    ['<C-f>'] = cmp.mapping.scroll_docs(4),
-    ['<C-Space>'] = function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item({ behavior = cmp.types.cmp.SelectBehavior.Insert })
-      else
-        cmp.complete()
-        cmp.select_next_item({ behavior = cmp.types.cmp.SelectBehavior.Insert })
-      end
-    end,
-    ['<C-c>'] = cmp.mapping.abort(),
-    ['<CR>'] = {
-      i = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
-    },
-    ['<C-CR>'] = cmp.mapping.confirm({ select = true }), -- Accept currently selected item. Set `select` to `false` to only confirm explicitly selected items.
-    ['<Down>'] = {
-      i = cmp.mapping.select_next_item({ behavior = cmp.types.cmp.SelectBehavior.Insert }),
-    },
-    ['<Up>'] = {
-      i = cmp.mapping.select_prev_item({ behavior = cmp.types.cmp.SelectBehavior.Insert }),
-    },
-    ['<C-j>'] = {
-      i = cmp.mapping.select_next_item({ behavior = cmp.types.cmp.SelectBehavior.Insert }),
-    },
-    ['<C-k>'] = {
-      i = cmp.mapping.select_prev_item({ behavior = cmp.types.cmp.SelectBehavior.Insert }),
-    },
-  }),
-  sources = cmp.config.sources({
-    { name = 'ultisnips' },
-    { name = 'nvim_lsp' },
-    -- { name = 'vsnip' }, -- For vsnip users.
-    -- { name = 'luasnip' }, -- For luasnip users.
-    -- { name = 'ultisnips' }, -- For ultisnips users.
-    -- { name = 'snippy' }, -- For snippy users.
-  }, {
-    { name = 'buffer' },
-  }),
+
   completion = {
-    completeopt = "menu,menuone,preview"
-  }
+    trigger = {
+      show_on_keyword                      = true,
+      show_on_trigger_character            = true,
+      show_on_backspace                    = false,
+      show_on_backspace_in_keyword         = false,
+      show_on_backspace_after_accept       = false,
+      show_on_backspace_after_insert_enter = false,
+      show_on_insert_on_trigger_character  = false,
+    },
+    list = {
+      selection = { preselect = true, auto_insert = true },
+    },
+    documentation = {
+      auto_show          = true,
+      auto_show_delay_ms = 200,
+    },
+    ghost_text = { enabled = false },
+    menu = {
+      draw = {
+        columns = {
+          { 'label', 'label_description', gap = 1 },
+          { 'kind', 'source_label', gap = 1 },
+        },
+        components = {
+          label = {
+            highlight = function(ctx) return ctx.kind_hl end,
+          },
+          label_description = {
+            highlight = function(ctx) return ctx.kind_hl end,
+          },
+          source_label = {
+            text = function(ctx)
+              local name = ctx.item.client_name or ctx.source_name
+              return '<' .. name .. '>'
+            end,
+            highlight = 'BlinkCmpSource',
+          },
+        },
+      },
+    },
+  },
+
+  signature = { enabled = true },
+
+  sources = {
+    default = { 'lsp', 'path', 'buffer', 'lazydev' },
+    providers = {
+      lsp = {
+        transform_items = function(_, items)
+          return vim.tbl_filter(function(item)
+            return item.kind ~= require('blink.cmp.types').CompletionItemKind.Snippet
+          end, items)
+        end,
+      },
+      lazydev = {
+        name   = 'LazyDev',
+        module = 'lazydev.integrations.blink',
+        score_offset = 100, -- priorité maximale sur le LSP pour les fichiers lua
+      },
+    },
+  },
+
+  fuzzy = {
+    implementation    = blink_cmp_use_lua and 'lua' or 'prefer_rust',
+    prebuilt_binaries = { download = false },
+  },
+
+  cmdline = {
+    enabled = true,
+    sources = function()
+      local type = vim.fn.getcmdtype()
+      if type == '/' or type == '?' then
+        return { 'buffer' }
+      end
+      if type == ':' then
+        return { 'path', 'cmdline' }
+      end
+      return {}
+    end,
+  },
 })
 
-
--- To use git you need to install the plugin petertriho/cmp-git and uncomment lines below
--- Set configuration for specific filetype.
---[[ cmp.setup.filetype('gitcommit', {
-  sources = cmp.config.sources({
-    { name = 'git' },
-  }, {
-    { name = 'buffer' },
-  })
-})
-require("cmp_git").setup() ]]-- 
-
--- Set up lspconfig.
-local capabilities = require('cmp_nvim_lsp').default_capabilities()
--- Replace <YOUR_LSP_SERVER> with each lsp server you've enabled.
--- require('lspconfig')['<YOUR_LSP_SERVER>'].setup {
-  --   capabilities = capabilities
-  -- }
+vim.api.nvim_set_hl(0, 'BlinkCmpKindText',          { link = 'String' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindMethod',         { link = 'Function' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindFunction',       { link = 'Function' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindConstructor',    { link = 'Function' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindField',          { link = 'Identifier' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindVariable',       { link = 'Identifier' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindClass',          { link = 'Type' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindInterface',      { link = 'Type' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindModule',         { link = 'Include' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindProperty',       { link = '@property' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindUnit',           { link = 'Number' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindValue',          { link = 'Number' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindEnum',           { link = 'Type' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindKeyword',        { link = 'Keyword' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindSnippet',        { link = 'Comment' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindColor',          { link = 'Special' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindFile',           { link = 'Directory' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindReference',      { link = 'Special' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindFolder',         { link = 'Directory' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindEnumMember',     { link = 'Constant' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindConstant',       { link = 'Constant' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindStruct',         { link = 'Type' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindEvent',          { link = 'Special' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindOperator',       { link = 'Operator' })
+vim.api.nvim_set_hl(0, 'BlinkCmpKindTypeParameter',  { link = 'Type' })
 
 require'mason'.setup{
   ui = {
@@ -122,11 +162,11 @@ vim.lsp.config('clangd', {
     --     end
   -- }
 
-require "lsp_signature".setup{
-  handler_opts = {
-    border = "none"   -- double, rounded, single, shadow, none, or a table of borders
-  },
-}
+-- require "lsp_signature".setup{
+--   handler_opts = {
+--     border = "none"   -- double, rounded, single, shadow, none, or a table of borders
+--   },
+-- }
 
 -- Lua
 -- vim.lsp.config("lua_ls", {

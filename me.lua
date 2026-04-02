@@ -1,5 +1,3 @@
-local cmp = require'cmp'
-
 local dap = require"dap"
 local pickers = require"telescope.pickers"
 local finders = require"telescope.finders"
@@ -13,28 +11,6 @@ local function file_exists(name)
    local f=io.open(name,"r")
    if f~=nil then io.close(f) return true else return false end
 end
-----------------------------
--- Vim commandline completion
-----------------------------
-
--- Use buffer source for `/` and `?` (if you enabled `native_menu`, this won't work anymore).
-cmp.setup.cmdline({ '/', '?' }, {
-  mapping = cmp.mapping.preset.cmdline(),
-  sources = {
-    { name = 'buffer' }
-  }
-})
-
--- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
-cmp.setup.cmdline(':', {
-  mapping = cmp.mapping.preset.cmdline(),
-  sources = cmp.config.sources({
-    { name = 'path' }
-  }, {
-    { name = 'cmdline' }
-  }),
-  matching = { disallow_symbol_nonprefix_matching = false }
-})
 
 ----------------------------
 -- Dap custom entries (for direct function call and dynamic dap configs)

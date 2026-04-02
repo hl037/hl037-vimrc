@@ -129,14 +129,20 @@ else
   Plug 'williamboman/mason.nvim'
   Plug 'williamboman/mason-lspconfig.nvim'
   Plug 'neovim/nvim-lspconfig'
-  Plug 'hrsh7th/cmp-nvim-lsp'
-  Plug 'hrsh7th/cmp-buffer'
-  Plug 'hrsh7th/cmp-path'
-  Plug 'hrsh7th/cmp-cmdline'
-  Plug 'hrsh7th/nvim-cmp'
-  Plug 'quangnguyen30192/cmp-nvim-ultisnips'
-  Plug 'ray-x/lsp_signature.nvim'
-  Plug 'folke/neodev.nvim'
+  " Plug 'hrsh7th/cmp-nvim-lsp'
+  " Plug 'hrsh7th/cmp-buffer'
+  " Plug 'hrsh7th/cmp-path'
+  " Plug 'hrsh7th/cmp-cmdline'
+  " Plug 'hrsh7th/nvim-cmp'
+  " Plug 'quangnguyen30192/cmp-nvim-ultisnips'
+  " Plug 'ray-x/lsp_signature.nvim'
+  Plug 'folke/lazydev.nvim'
+  
+  if $HOST_ENV == 'bnpp'
+    Plug 'saghen/blink.cmp', { 'tag': 'v1.*' }
+  else
+    Plug 'saghen/blink.cmp', { 'tag': 'v1.*', 'do': 'cargo build --release' }
+  endif
 
   " Debugging
   Plug 'mfussenegger/nvim-dap'
@@ -172,6 +178,8 @@ Plug '~/.vim/me/maw'
 Plug '~/.vim/me/hl037Helpers'
 
 call plug#end()
+
+colorscheme hl037
 
 source ~/.vim/supercontrol.vim
 
